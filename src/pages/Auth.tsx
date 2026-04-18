@@ -66,7 +66,14 @@ export default function Auth() {
       return;
     }
     setSubmitting(true);
-    const { error } = await signUp(parsed.data);
+    const { error } = await signUp({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      name: parsed.data.name,
+      role: parsed.data.role,
+      department: parsed.data.department,
+      matricNo: parsed.data.matricNo,
+    });
     setSubmitting(false);
     if (error) toast.error(error);
     else toast.success("Account created — check your email if confirmation is required.");
