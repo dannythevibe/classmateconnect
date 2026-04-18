@@ -15,7 +15,7 @@ const signUpSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(100),
   email: z.string().trim().email("Invalid email").max(255),
   password: z.string().min(6, "Min 6 characters").max(72),
-  role: z.enum(["student", "lecturer"]),
+  role: z.literal("student"),
   department: z.string().trim().min(1, "Department required").max(100),
   matricNo: z.string().trim().max(50).optional(),
 });
@@ -134,35 +134,21 @@ export default function Auth() {
                   <Input id="su-password" type="password" autoComplete="new-password" value={signUpData.password}
                     onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })} className="mt-1.5" />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Role</Label>
-                    <Select value={signUpData.role} onValueChange={(v) => setSignUpData({ ...signUpData, role: v as Role })}>
-                      <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="student">Student</SelectItem>
-                        <SelectItem value="lecturer">Lecturer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="su-dept">Department</Label>
-                    <Input id="su-dept" value={signUpData.department}
-                      onChange={(e) => setSignUpData({ ...signUpData, department: e.target.value })} className="mt-1.5" />
-                  </div>
+                <div>
+                  <Label htmlFor="su-dept">Department</Label>
+                  <Input id="su-dept" value={signUpData.department}
+                    onChange={(e) => setSignUpData({ ...signUpData, department: e.target.value })} className="mt-1.5" />
                 </div>
-                {signUpData.role === "student" && (
-                  <div>
-                    <Label htmlFor="su-matric">Matric number</Label>
-                    <Input id="su-matric" value={signUpData.matricNo}
-                      onChange={(e) => setSignUpData({ ...signUpData, matricNo: e.target.value })} className="mt-1.5" />
-                  </div>
-                )}
+                <div>
+                  <Label htmlFor="su-matric">Matric number</Label>
+                  <Input id="su-matric" value={signUpData.matricNo}
+                    onChange={(e) => setSignUpData({ ...signUpData, matricNo: e.target.value })} className="mt-1.5" />
+                </div>
                 <Button type="submit" disabled={submitting} className="w-full h-11 gradient-primary font-semibold shadow-glow">
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
-                  Admin accounts must be assigned manually for security.
+                  Lecturer and admin accounts must be assigned by an administrator for security.
                 </p>
               </form>
             </TabsContent>
