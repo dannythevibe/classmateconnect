@@ -14,9 +14,9 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({ name, email, department });
+    await updateProfile({ name, email, department });
     toast.success("Profile updated");
   };
 
