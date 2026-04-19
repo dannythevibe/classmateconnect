@@ -60,18 +60,17 @@ async function fetchLatestNotifications(userId: string): Promise<NotificationRow
 
 export default function Dashboard() {
   const { user } = useAuth();
-  if (!user) return null;
 
-  const { data: courses = [] } = useQuery({ queryKey: ["courses"], queryFn: fetchCourses });
+  const { data: courses = [] } = useQuery({ queryKey: ["courses"], queryFn: fetchCourses, enabled: !!user });
   const { data: students = [] } = useQuery({
     queryKey: ["students"],
     queryFn: fetchStudents,
-    enabled: user.role !== "student",
+    enabled: !!user && user.role !== "student",
   });
   const { data: myStudent } = useQuery({
-    queryKey: ["my-student", user.matricNo],
-    queryFn: () => fetchMyStudentRow(user.matricNo),
-    enabled: user.role === "student",
+    queryKey: ["my-student", user?.matricNo],
+    queryFn: () => fetchMyStudentRow(user?.matricNo),
+    enabled: !!user && user.role === "student",
   });
   const ids = useMemo(() => courses.map((c) => c.id), [courses]);
   const { data: rates = {} } = useQuery({
@@ -79,23 +78,24 @@ export default function Dashboard() {
     queryFn: () => fetchAttendanceRates(ids),
     enabled: ids.length > 0,
   });
-  const { data: trendRecs = [] } = useQuery({ queryKey: ["dash-trend"], queryFn: fetchTrendRecords });
+  const { data: trendRecs = [] } = useQuery({ queryKey: ["dash-trend"], queryFn: fetchTrendRecords, enabled: !!user });
   const { data: notifs = [] } = useQuery({
-    queryKey: ["notifications-preview", user.id],
-    queryFn: () => fetchLatestNotifications(user.id),
+    queryKey: ["notifications-preview", user?.id],
+    queryFn: () => fetchLatestNotifications(user!.id),
+    enabled: !!user,
   });
   const { data: studentRecs = [] } = useQuery({
     queryKey: ["recent-records-student", myStudent?.id],
     queryFn: () => fetchRecentRecordsForUser(myStudent?.id ?? null),
-    enabled: user.role === "student" && !!myStudent,
+    enabled: !!user && user.role === "student" && !!myStudent,
   });
   const { data: lecturerRecs = [] } = useQuery({
-    queryKey: ["recent-records-lecturer", user.id],
-    queryFn: () => fetchRecentRecordsForLecturer(user.id),
-    enabled: user.role === "lecturer" || user.role === "admin",
+    queryKey: ["recent-records-lecturer", user?.id],
+    queryFn: () => fetchRecentRecordsForLecturer(user!.id),
+    enabled: !!user && (user.role === "lecturer" || user.role === "admin"),
   });
 
-  const myCourses = courses.filter((c) => c.lecturer_id === user.id);
+  const myCourses = courses.filter((c) => c.lecturer_id === user?.id);
 
   const overall = useMemo(() => {
     const vals = Object.values(rates);
