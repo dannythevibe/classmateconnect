@@ -14,12 +14,211 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_records: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          marked_at: string
+          method: Database["public"]["Enums"]["attendance_method"]
+          session_id: string | null
+          status: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          marked_at?: string
+          method?: Database["public"]["Enums"]["attendance_method"]
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          marked_at?: string
+          method?: Database["public"]["Enums"]["attendance_method"]
+          session_id?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_sessions: {
+        Row: {
+          course_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          lecturer_id: string
+          room: string
+          started_at: string
+          token: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          lecturer_id: string
+          room?: string
+          started_at?: string
+          token: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          lecturer_id?: string
+          room?: string
+          started_at?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          code: string
+          color: string
+          created_at: string
+          id: string
+          lecturer_id: string
+          room: string
+          schedule: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          color?: string
+          created_at?: string
+          id?: string
+          lecturer_id: string
+          room?: string
+          schedule?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          color?: string
+          created_at?: string
+          id?: string
+          lecturer_id?: string
+          room?: string
+          schedule?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enrollments: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           department: string | null
           email: string
           id: string
+          level: string | null
           matric_no: string | null
           name: string
           updated_at: string
@@ -30,6 +229,7 @@ export type Database = {
           department?: string | null
           email?: string
           id?: string
+          level?: string | null
           matric_no?: string | null
           name?: string
           updated_at?: string
@@ -40,10 +240,44 @@ export type Database = {
           department?: string | null
           email?: string
           id?: string
+          level?: string | null
           matric_no?: string | null
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department: string
+          id: string
+          level: string
+          matric_no: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          id?: string
+          level?: string
+          matric_no: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          id?: string
+          level?: string
+          matric_no?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -84,9 +318,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_course_lecturer: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_self_student: {
+        Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "student" | "lecturer" | "admin"
+      attendance_method: "qr" | "manual" | "gps"
+      attendance_status: "present" | "late" | "absent"
+      notification_type: "info" | "warning" | "success"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -215,6 +460,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "lecturer", "admin"],
+      attendance_method: ["qr", "manual", "gps"],
+      attendance_status: ["present", "late", "absent"],
+      notification_type: ["info", "warning", "success"],
     },
   },
 } as const
