@@ -141,7 +141,9 @@ export default function Dashboard() {
     return "Good evening";
   })();
 
-  const recentRows = user.role === "student" ? studentRecs : lecturerRecs;
+  const recentRows = user?.role === "student" ? studentRecs : lecturerRecs;
+
+  if (!user) return null;
 
   return (
     <div className="space-y-6">
