@@ -16,6 +16,7 @@ import Reports from "./pages/Reports";
 import AIAssistant from "./pages/AIAssistant";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/ai-assistant" element={<ProtectedRoute><AppLayout><AIAssistant /></AppLayout></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminUsers /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
