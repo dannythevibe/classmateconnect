@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
   { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, roles: ["student", "lecturer", "admin"] },
   { to: "/notifications", label: "Notifications", icon: Bell, roles: ["student", "lecturer", "admin"] },
   { to: "/profile", label: "Profile", icon: UserIcon, roles: ["student", "lecturer", "admin"] },
-  { to: "/admin/users", label: "Users", icon: ShieldCheck, roles: ["admin"] },
+  { to: "/admin/users", label: "Users", icon: ShieldCheck, roles: ["student", "lecturer", "admin"] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
