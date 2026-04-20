@@ -40,6 +40,9 @@ export default function Auth() {
     department: "",
     matricNo: "",
   });
+  const [lecturerData, setLecturerData] = useState({
+    name: "", email: "", password: "", department: "", inviteCode: "",
+  });
 
   useEffect(() => {
     if (!loading && user) navigate("/dashboard", { replace: true });
