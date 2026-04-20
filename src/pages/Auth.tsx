@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,9 +95,10 @@ export default function Auth() {
 
         <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-elevated backdrop-blur-xl sm:p-8">
           <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
+              <TabsTrigger value="signup">Student</TabsTrigger>
+              <TabsTrigger value="lecturer">Lecturer</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
