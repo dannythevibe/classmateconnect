@@ -492,7 +492,7 @@ function StudentView() {
       // 📊 Anomaly & Threshold Detection
       const { data: records } = await supabase.from("attendance_records").select("status").eq("student_id", myStudent.id).eq("course_id", session.course_id);
       const totalRecs = (records?.length || 0) + 1;
-      const presentRecs = (records?.filter(r => r.status === "present" || r.status === "late" || r.status === "excused").length || 0) + (status !== "absent" ? 1 : 0);
+      const presentRecs = (records?.filter((r: any) => r.status === "present" || r.status === "late" || r.status === "excused").length || 0) + 1;
       const rate = Math.round((presentRecs / totalRecs) * 100);
 
       if (rate < 70 && totalRecs >= 3) {
@@ -554,7 +554,7 @@ function StudentView() {
         return;
       }
 
-      const { error } = await supabase.from("attendance_records").insert(payload);
+      const { error } = await supabase.from("attendance_records").insert(payload as any);
 
       if (error) { 
         if (error.code === "23505") throw new Error("Already marked!"); 
