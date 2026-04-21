@@ -204,8 +204,10 @@ export type Database = {
           code: string
           color: string
           created_at: string
+          department: string | null
           id: string
           lecturer_id: string
+          level: string | null
           room: string
           schedule: string
           title: string
@@ -215,8 +217,10 @@ export type Database = {
           code: string
           color?: string
           created_at?: string
+          department?: string | null
           id?: string
           lecturer_id: string
+          level?: string | null
           room?: string
           schedule?: string
           title: string
@@ -226,8 +230,10 @@ export type Database = {
           code?: string
           color?: string
           created_at?: string
+          department?: string | null
           id?: string
           lecturer_id?: string
+          level?: string | null
           room?: string
           schedule?: string
           title?: string

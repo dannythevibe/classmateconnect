@@ -5,6 +5,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   hint?: string;
+  description?: string;
   icon?: ReactNode;
   variant?: "default" | "primary" | "accent" | "success";
   trend?: string;
@@ -17,15 +18,16 @@ const variants = {
   success: "gradient-success text-success-foreground",
 };
 
-export function StatCard({ label, value, hint, icon, variant = "default", trend }: StatCardProps) {
+export function StatCard({ label, value, hint, description, icon, variant = "default", trend }: StatCardProps) {
   const isColored = variant !== "default";
+  const subtitle = hint ?? description;
   return (
     <div className={cn("relative overflow-hidden rounded-2xl p-5 shadow-soft transition-bounce hover:-translate-y-1 hover:shadow-elevated", variants[variant])}>
       <div className="flex items-start justify-between">
         <div>
           <p className={cn("text-xs font-medium uppercase tracking-wider", isColored ? "opacity-80" : "text-muted-foreground")}>{label}</p>
           <p className="mt-2 font-display text-3xl font-bold">{value}</p>
-          {hint && <p className={cn("mt-1 text-xs", isColored ? "opacity-80" : "text-muted-foreground")}>{hint}</p>}
+          {subtitle && <p className={cn("mt-1 text-xs", isColored ? "opacity-80" : "text-muted-foreground")}>{subtitle}</p>}
         </div>
         {icon && (
           <div className={cn("flex h-11 w-11 items-center justify-center rounded-xl", isColored ? "bg-white/20" : "bg-primary/10 text-primary")}>

@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchCourses, fetchMyStudentRow, fetchStudentEnrollments, AttendanceSession, AttendanceRecord } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
-import { QrCode, MapPin, Clock, RefreshCw, CheckCircle2, ScanLine, Shield, BookOpen, AlertTriangle, History } from "lucide-react";
+import { QrCode, MapPin, Clock, RefreshCw, CheckCircle2, ScanLine, Shield, ShieldCheck, BookOpen, AlertTriangle, History, Loader2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -17,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createNotification, fetchAttendanceRates } from "@/lib/queries";
 import SubmitExcuseDialog from "@/components/dialogs/SubmitExcuseDialog";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
@@ -116,15 +118,17 @@ function LecturerView() {
           if (rErr) console.warn("Record update failed", rErr);
       }
 
-      const { data: sUser } = await supabase.from("students").select("user_id").eq("id", studentId).single();
-      if (sUser?.user_id) {
-        await createNotification(
-          sUser.user_id,
-          `Excuse ${status === "approved" ? "Approved ✅" : "Rejected ❌"}`,
-
-          `Your justification for ${course?.code} attendance has been ${status}.`,
-          status === "approved" ? "success" : "warning"
-        );
+      const { data: sRow } = await supabase.from("students").select("matric_no").eq("id", studentId).single();
+      if (sRow?.matric_no) {
+        const { data: prof } = await supabase.from("profiles").select("user_id").eq("matric_no", sRow.matric_no).maybeSingle();
+        if (prof?.user_id) {
+          await createNotification(
+            prof.user_id,
+            `Excuse ${status === "approved" ? "Approved ✅" : "Rejected ❌"}`,
+            `Your justification for ${course?.code} attendance has been ${status}.`,
+            status === "approved" ? "success" : "warning"
+          );
+        }
       }
     },
     onSuccess: () => {
@@ -155,6 +159,7 @@ function LecturerView() {
       const loc = await getCurrentLocation().catch(() => null);
       const { error } = await supabase.from("attendance_sessions").insert({
         course_id: courseId,
+        lecturer_id: user.id,
         token,
         expires_at: expiresAt,
         room: course.room,
@@ -167,14 +172,17 @@ function LecturerView() {
       if (enrollmentRows) {
         for (const row of enrollmentRows) {
           // Note: In a real app, do this in parallel or use a Supabase Edge Function
-          const { data: student } = await supabase.from("students").select("user_id").eq("id", row.student_id).single();
-          if (student?.user_id) {
-             await createNotification(
-               student.user_id,
-               "Class Session Live!",
-               `The session for ${course.code} (${course.title}) has started in ${course.room}. Join now!`,
-               "info"
-             );
+          const { data: student } = await supabase.from("students").select("matric_no").eq("id", row.student_id).single();
+          if (student?.matric_no) {
+            const { data: prof } = await supabase.from("profiles").select("user_id").eq("matric_no", student.matric_no).maybeSingle();
+            if (prof?.user_id) {
+               await createNotification(
+                 prof.user_id,
+                 "Class Session Live!",
+                 `The session for ${course.code} (${course.title}) has started in ${course.room}. Join now!`,
+                 "info"
+               );
+            }
           }
         }
       }
@@ -484,7 +492,7 @@ function StudentView() {
       // 📊 Anomaly & Threshold Detection
       const { data: records } = await supabase.from("attendance_records").select("status").eq("student_id", myStudent.id).eq("course_id", session.course_id);
       const totalRecs = (records?.length || 0) + 1;
-      const presentRecs = (records?.filter(r => r.status === "present" || r.status === "late" || r.status === "excused").length || 0) + (status !== "absent" ? 1 : 0);
+      const presentRecs = (records?.filter((r: any) => r.status === "present" || r.status === "late" || r.status === "excused").length || 0) + 1;
       const rate = Math.round((presentRecs / totalRecs) * 100);
 
       if (rate < 70 && totalRecs >= 3) {
@@ -546,7 +554,7 @@ function StudentView() {
         return;
       }
 
-      const { error } = await supabase.from("attendance_records").insert(payload);
+      const { error } = await supabase.from("attendance_records").insert(payload as any);
 
       if (error) { 
         if (error.code === "23505") throw new Error("Already marked!"); 

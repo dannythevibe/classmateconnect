@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Sparkles, ChevronRight, X, LayoutDashboard, QrCode, BookOpen, Calendar, ClipboardCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,7 +61,9 @@ export default function Onboarding() {
   // Expose reset to window for the Profile page to call
   useEffect(() => {
     (window as any).restartOnboarding = reset;
-    return () => delete (window as any).restartOnboarding;
+    return () => {
+      delete (window as any).restartOnboarding;
+    };
   }, []);
 
   if (!show || !user || user.role === "admin") return null;

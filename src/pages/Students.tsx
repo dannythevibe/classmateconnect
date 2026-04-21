@@ -1,7 +1,11 @@
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { fetchStudents, fetchAllAttendanceRecords } from "@/lib/queries";
-import { useMemo } from "react";
-import { AlertCircle, TrendingDown, CheckCircle2 } from "lucide-react";
+import { Search, Upload, Users } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
 
@@ -14,13 +18,13 @@ export default function Students() {
   const studentStats = useMemo(() => {
     const stats: Record<string, { rate: number; count: number }> = {};
     students.forEach(s => {
-      const sRecs = records.filter(r => r.student_id === s.id);
+      const sRecs = records.filter((r: any) => r.student_id === s.id);
       const total = sRecs.length;
       if (total === 0) {
         stats[s.id] = { rate: 0, count: 0 };
         return;
       }
-      const present = sRecs.filter(r => r.status === "present" || r.status === "late" || r.status === "excused").length;
+      const present = sRecs.filter((r: any) => r.status === "present" || r.status === "late" || r.status === "excused").length;
       stats[s.id] = { rate: Math.round((present / total) * 100), count: total };
     });
     return stats;
