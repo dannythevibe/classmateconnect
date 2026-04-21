@@ -86,14 +86,22 @@ export const courseColors = [
 ];
 
 export async function fetchCourses() {
-  const { data, error } = await supabase
-    .from("courses")
-    .select("*, profiles!courses_lecturer_id_fkey(name)");
+  const { data, error } = await supabase.from("courses").select("*");
   if (error) throw error;
-  
+
+  const lecturerIds = Array.from(new Set((data ?? []).map((c: any) => c.lecturer_id).filter(Boolean)));
+  let nameMap: Record<string, string> = {};
+  if (lecturerIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("user_id, name")
+      .in("user_id", lecturerIds);
+    nameMap = Object.fromEntries((profs ?? []).map((p: any) => [p.user_id, p.name]));
+  }
+
   return (data ?? []).map((c: any) => ({
     ...c,
-    lecturer_name: c.profiles?.name || "Unknown Lecturer",
+    lecturer_name: nameMap[c.lecturer_id] || "Unknown Lecturer",
   })) as Course[];
 }
 
