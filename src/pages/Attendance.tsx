@@ -118,15 +118,17 @@ function LecturerView() {
           if (rErr) console.warn("Record update failed", rErr);
       }
 
-      const { data: sUser } = await supabase.from("students").select("user_id").eq("id", studentId).single();
-      if (sUser?.user_id) {
-        await createNotification(
-          sUser.user_id,
-          `Excuse ${status === "approved" ? "Approved ✅" : "Rejected ❌"}`,
-
-          `Your justification for ${course?.code} attendance has been ${status}.`,
-          status === "approved" ? "success" : "warning"
-        );
+      const { data: sRow } = await supabase.from("students").select("matric_no").eq("id", studentId).single();
+      if (sRow?.matric_no) {
+        const { data: prof } = await supabase.from("profiles").select("user_id").eq("matric_no", sRow.matric_no).maybeSingle();
+        if (prof?.user_id) {
+          await createNotification(
+            prof.user_id,
+            `Excuse ${status === "approved" ? "Approved ✅" : "Rejected ❌"}`,
+            `Your justification for ${course?.code} attendance has been ${status}.`,
+            status === "approved" ? "success" : "warning"
+          );
+        }
       }
     },
     onSuccess: () => {
@@ -157,6 +159,7 @@ function LecturerView() {
       const loc = await getCurrentLocation().catch(() => null);
       const { error } = await supabase.from("attendance_sessions").insert({
         course_id: courseId,
+        lecturer_id: user.id,
         token,
         expires_at: expiresAt,
         room: course.room,
@@ -169,14 +172,17 @@ function LecturerView() {
       if (enrollmentRows) {
         for (const row of enrollmentRows) {
           // Note: In a real app, do this in parallel or use a Supabase Edge Function
-          const { data: student } = await supabase.from("students").select("user_id").eq("id", row.student_id).single();
-          if (student?.user_id) {
-             await createNotification(
-               student.user_id,
-               "Class Session Live!",
-               `The session for ${course.code} (${course.title}) has started in ${course.room}. Join now!`,
-               "info"
-             );
+          const { data: student } = await supabase.from("students").select("matric_no").eq("id", row.student_id).single();
+          if (student?.matric_no) {
+            const { data: prof } = await supabase.from("profiles").select("user_id").eq("matric_no", student.matric_no).maybeSingle();
+            if (prof?.user_id) {
+               await createNotification(
+                 prof.user_id,
+                 "Class Session Live!",
+                 `The session for ${course.code} (${course.title}) has started in ${course.room}. Join now!`,
+                 "info"
+               );
+            }
           }
         }
       }
