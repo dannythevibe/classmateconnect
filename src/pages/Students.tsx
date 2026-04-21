@@ -1,19 +1,35 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchStudents } from "@/lib/queries";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, Upload, Users } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { fetchStudents, fetchAllAttendanceRecords } from "@/lib/queries";
+import { useMemo } from "react";
+import { AlertCircle, TrendingDown, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
+
 
 export default function Students() {
   const [q, setQ] = useState("");
   const { data: students = [], isLoading } = useQuery({ queryKey: ["students"], queryFn: fetchStudents });
+  const { data: records = [] } = useQuery({ queryKey: ["all-attendance-records"], queryFn: fetchAllAttendanceRecords });
+
+  const studentStats = useMemo(() => {
+    const stats: Record<string, { rate: number; count: number }> = {};
+    students.forEach(s => {
+      const sRecs = records.filter(r => r.student_id === s.id);
+      const total = sRecs.length;
+      if (total === 0) {
+        stats[s.id] = { rate: 0, count: 0 };
+        return;
+      }
+      const present = sRecs.filter(r => r.status === "present" || r.status === "late" || r.status === "excused").length;
+      stats[s.id] = { rate: Math.round((present / total) * 100), count: total };
+    });
+    return stats;
+  }, [students, records]);
 
   const filtered = students.filter(
     (s) => s.name.toLowerCase().includes(q.toLowerCase()) || s.matric_no.toLowerCase().includes(q.toLowerCase())
   );
+
 
   return (
     <div className="space-y-6">
@@ -64,8 +80,21 @@ export default function Students() {
               </div>
               <div className="col-span-3 text-sm text-muted-foreground">{s.matric_no}</div>
               <div className="col-span-2 text-sm">{s.level || "—"}</div>
-              <div className="col-span-1 text-xs text-muted-foreground">{s.department || "—"}</div>
+              <div className="col-span-1 flex items-center justify-end gap-3">
+                 <div className="text-right">
+                    <p className={cn("text-xs font-black", (studentStats[s.id]?.rate || 0) < 70 ? "text-destructive" : "text-emerald-500")}>
+                      {studentStats[s.id]?.rate || 0}%
+                    </p>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase">Rate</p>
+                 </div>
+                 {(studentStats[s.id]?.rate || 0) < 70 && (studentStats[s.id]?.count || 0) > 0 && (
+                   <Badge className="bg-destructive/10 text-destructive border-none font-black text-[9px] px-2 py-0.5 animate-pulse">
+                     HIGH RISK
+                   </Badge>
+                 )}
+              </div>
             </div>
+
           ))}
         </div>
       )}

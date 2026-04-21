@@ -1,124 +1,164 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { ReactNode, useState } from "react";
+import { Link, useLocation, useNavigate, NavLink } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard, BookOpen, Users, QrCode, BarChart3, Bell, User as UserIcon,
-  LogOut, GraduationCap, Sparkles, Menu, X, ShieldCheck
+import { 
+  LayoutDashboard, BookOpen, Users, ClipboardCheck, 
+  BarChart3, Sparkles, Bell, User as UserIcon, 
+  LogOut, Menu, X, ShieldCheck, ChevronRight, GraduationCap, Calendar
 } from "lucide-react";
-import { useState, ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 
-interface NavItem { to: string; label: string; icon: any; roles: string[] }
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import Onboarding from "./Onboarding";
+
+
+type Role = "student" | "lecturer" | "admin";
+
+interface NavItem {
+  to: string;
+  label: string;
+  icon: any;
+  roles: Role[];
+}
 
 const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["student", "lecturer", "admin"] },
-  { to: "/courses", label: "Courses", icon: BookOpen, roles: ["student", "lecturer", "admin"] },
+  { to: "/courses", label: "My Courses", icon: BookOpen, roles: ["student", "lecturer", "admin"] },
   { to: "/students", label: "Students", icon: Users, roles: ["lecturer", "admin"] },
-  { to: "/attendance", label: "Attendance", icon: QrCode, roles: ["student", "lecturer"] },
+  { to: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["student", "lecturer"] },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["lecturer", "admin"] },
   { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, roles: ["student", "lecturer", "admin"] },
   { to: "/notifications", label: "Notifications", icon: Bell, roles: ["student", "lecturer", "admin"] },
+
+  { to: "/timetable", label: "Timetable", icon: Calendar, roles: ["student", "lecturer", "admin"] },
   { to: "/profile", label: "Profile", icon: UserIcon, roles: ["student", "lecturer", "admin"] },
-  { to: "/admin/users", label: "Users", icon: ShieldCheck, roles: ["student", "lecturer", "admin"] },
+
+  { to: "/admin", label: "Admin Panel", icon: ShieldCheck, roles: ["student", "lecturer", "admin"] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   if (!user) return <>{children}</>;
 
-  const items = navItems.filter((i) => i.roles.includes(user.role));
+  const filteredItems = navItems.filter((i) => i.roles.includes(user.role as Role));
 
-  const handleLogout = () => { logout(); navigate("/"); };
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth");
+  };
 
-  const SidebarBody = (
+  const SidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 px-6 py-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow">
-          <GraduationCap className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <div>
-          <p className="font-display text-lg font-bold leading-none">Attendly</p>
-          <p className="text-xs text-muted-foreground">Smart Attendance</p>
-        </div>
+      <div className="flex h-20 items-center px-6">
+        <Link to="/dashboard" className="flex items-center gap-3 group">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow transition-transform group-hover:scale-105 active:scale-95">
+            <GraduationCap className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <p className="font-display text-lg font-bold leading-tight tracking-tight text-foreground">Attendly</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary/70">Smart Attendance</p>
+          </div>
+        </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const active = location.pathname === item.to;
+      <nav className="flex-1 space-y-1.5 px-4 py-4 overflow-y-auto custom-scrollbar">
+        {filteredItems.map((item) => {
+          const isActive = location.pathname === item.to || (item.to === "/admin" && location.pathname.startsWith("/admin"));
           return (
             <NavLink
               key={item.to}
               to={item.to}
               onClick={() => setOpen(false)}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-smooth",
-                active
-                  ? "gradient-primary text-primary-foreground shadow-md"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <Icon className="h-4.5 w-4.5" />
-              <span>{item.label}</span>
+              <item.icon className={cn("h-5 w-5 transition-colors", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary")} />
+              <span className="flex-1 truncate">{item.label}</span>
+              {isActive && <ChevronRight className="h-4 w-4 animate-in fade-in slide-in-from-left-2" />}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
-        <div className="mb-2 flex items-center gap-3 rounded-xl px-3 py-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-accent text-sm font-bold text-accent-foreground">
-            {user.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
-          </div>
+      <div className="mt-auto border-t border-border/40 p-4 bg-muted/30 backdrop-blur-md">
+        <div className="flex items-center gap-3 px-2 py-3">
+          <Avatar className="h-10 w-10 border-2 border-primary/10">
+            <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold font-display uppercase">
+              {user.name.substring(0, 2)}
+            </AvatarFallback>
+          </Avatar>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="truncate text-xs text-muted-foreground capitalize">{user.role}</p>
+            <p className="truncate text-sm font-bold text-foreground leading-none">{user.name}</p>
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{user.role}</p>
           </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full hover:bg-destructive/10 hover:text-destructive shrink-0">
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign out</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" /> Sign out
-        </Button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen gradient-mesh">
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border/50 bg-background/80 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <div className="flex items-center gap-2">
+    <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
+      <Onboarding />
+      {/* Mobile Header */}
+
+      <header className="fixed top-0 z-40 flex h-16 w-full items-center justify-between border-b border-border/40 bg-background/80 px-4 backdrop-blur-md lg:hidden">
+        <Link to="/dashboard" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+            <GraduationCap className="h-5 w-5 text-white" />
           </div>
-          <span className="font-display text-lg font-bold">Attendly</span>
-        </div>
-        <Button variant="ghost" size="icon" onClick={() => setOpen((o) => !o)}>
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <span className="font-display font-bold tracking-tight">Attendly</span>
+        </Link>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(true)} className="rounded-full">
+          <Menu className="h-6 w-6" />
         </Button>
       </header>
 
-      {/* Mobile drawer */}
+      {/* Desktop Sidebar */}
+      <aside
+        className="hidden fixed inset-y-0 left-0 z-50 w-72 flex-col border-r border-border/40 bg-card/50 backdrop-blur-xl lg:flex"
+      >
+        {SidebarContent}
+      </aside>
+
+      {/* Mobile Sidebar */}
       {open && (
-        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" />
-          <aside className="absolute left-0 top-0 h-full w-72 bg-sidebar shadow-elevated" onClick={(e) => e.stopPropagation()}>
-            {SidebarBody}
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-sm transition-opacity" onClick={() => setOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-72 border-r border-border/40 bg-card shadow-2xl animate-in slide-in-from-left duration-300">
+            {SidebarContent}
+            <Button variant="ghost" size="icon" onClick={() => setOpen(false)} className="absolute right-4 top-4 rounded-full">
+              <X className="h-5 w-5" />
+            </Button>
           </aside>
         </div>
       )}
 
-      <div className="lg:flex">
-        {/* Desktop sidebar */}
-        <aside className="hidden h-screen w-64 shrink-0 border-r border-sidebar-border bg-sidebar lg:sticky lg:top-0 lg:block">
-          {SidebarBody}
-        </aside>
-
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">{children}</main>
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 pt-16 lg:pt-0 lg:ml-72 min-h-screen flex flex-col">
+        <div className="flex-1 mx-auto w-full px-4 py-8 lg:px-10 lg:py-12 animate-in fade-in duration-500">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

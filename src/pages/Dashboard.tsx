@@ -3,12 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { StatCard } from "@/components/StatCard";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchCourses, fetchStudents, fetchAttendanceRates, fetchMyStudentRow, NotificationRow, AttendanceRecord } from "@/lib/queries";
-import { QrCode, Users, BookOpen, TrendingUp, Sparkles, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { fetchCourses, fetchStudents, fetchAttendanceRates, fetchMyStudentRow, fetchStudentEnrollments, NotificationRow, AttendanceRecord } from "@/lib/queries";
+import { QrCode, Users, BookOpen, TrendingUp, Sparkles, AlertTriangle, CheckCircle2, Clock, Calendar, ChevronRight, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatDistanceToNow } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 async function fetchRecentRecordsForUser(studentId: string | null) {
   if (!studentId) return [] as (AttendanceRecord & { courses: { code: string; title: string } | null })[];
@@ -72,6 +74,12 @@ export default function Dashboard() {
     queryFn: () => fetchMyStudentRow(user?.matricNo),
     enabled: !!user && user.role === "student",
   });
+  const { data: myEnrollments = [] } = useQuery({
+    queryKey: ["my-enrollments", myStudent?.id],
+    queryFn: () => fetchStudentEnrollments(myStudent!.id),
+    enabled: !!myStudent,
+  });
+
   const ids = useMemo(() => courses.map((c) => c.id), [courses]);
   const { data: rates = {} } = useQuery({
     queryKey: ["attendance-rates", ids],
@@ -95,7 +103,7 @@ export default function Dashboard() {
     enabled: !!user && (user.role === "lecturer" || user.role === "admin"),
   });
 
-  const myCourses = courses.filter((c) => c.lecturer_id === user?.id);
+  const lecturerCourses = courses.filter((c) => c.lecturer_id === user?.id);
 
   const overall = useMemo(() => {
     const vals = Object.values(rates);
@@ -146,123 +154,139 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
-      {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl gradient-hero p-6 text-primary-foreground shadow-elevated sm:p-8">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative">
-          <p className="text-sm opacity-90">{greeting},</p>
-          <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{user.name.split(" ")[0]} 👋</h1>
-          <p className="mt-2 max-w-md text-sm opacity-90">
-            {user.role === "student" && `${courses.length} courses available · keep your attendance up.`}
-            {user.role === "lecturer" && `You manage ${myCourses.length} course${myCourses.length === 1 ? "" : "s"}. Generate a QR to begin.`}
-            {user.role === "admin" && `Campus attendance is at ${overall}% overall.`}
-          </p>
-          {(user.role === "lecturer" || user.role === "student") && (
-            <Button asChild size="lg" className="mt-5 bg-white text-primary hover:bg-white/90">
+    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+      {/* Hero Welcome */}
+      <div className="relative overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/60 p-8 shadow-elevated backdrop-blur-3xl lg:p-10">
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-[100px] animate-float" />
+        <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-accent/10 blur-[100px] animate-float" style={{ animationDelay: "1s" }} />
+        
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <h1 className="font-display text-4xl font-black tracking-tighter text-foreground sm:text-5xl">
+              {greeting}, <span className="text-gradient">{user.name.split(" ")[0]}</span>!
+            </h1>
+            <p className="max-w-xl text-base text-muted-foreground font-medium leading-relaxed">
+              {user.role === "student" && `You're registered for ${myEnrollments.length} courses this semester. Keep showing up to stay eligible!`}
+              {user.role === "lecturer" && `You have ${lecturerCourses.length} active courses today. Start a verification session to begin.`}
+              {user.role === "admin" && `Campus-wide attendance is currently at ${overall}% across all departments.`}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center justify-center">
+            <Button asChild size="lg" className="h-14 rounded-2xl bg-primary px-8 text-base font-bold text-white shadow-glow transition-all hover:scale-105 active:scale-95">
               <Link to="/attendance">
-                <QrCode className="mr-2 h-4 w-4" /> {user.role === "lecturer" ? "Start a session" : "Mark attendance"}
+                <QrCode className="mr-3 h-5 w-5" /> 
+                {user.role === "lecturer" ? "Run Session" : "Mark Attendance"}
               </Link>
             </Button>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Dynamic Stats Section */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {user.role === "student" && (
           <>
-            <StatCard label="Overall attendance" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} variant="primary" />
-            <StatCard label="My courses" value={courses.length} icon={<BookOpen className="h-5 w-5" />} />
-            <StatCard label="Records" value={studentRecs.length} icon={<CheckCircle2 className="h-5 w-5" />} variant="success" />
-            <StatCard label="Notifications" value={notifs.filter((n) => !n.read).length} icon={<AlertTriangle className="h-5 w-5" />} variant="accent" />
+            <StatCard label="My Rate" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} description="Across All Classes" variant="primary" />
+            <StatCard label="My Courses" value={myEnrollments.length} icon={<BookOpen className="h-5 w-5" />} description="Active Enrollment" />
+            <StatCard label="Verified" value={studentRecs.length} icon={<CheckCircle2 className="h-5 w-5" />} description="Recent Presence" variant="success" />
+            <StatCard label="Alerts" value={notifs.filter((n) => !n.read).length} icon={<AlertTriangle className="h-5 w-5" />} description="Unread Messages" variant="accent" />
           </>
         )}
-        {user.role === "lecturer" && (
+        {(user.role === "lecturer" || user.role === "admin") && (
           <>
-            <StatCard label="My courses" value={myCourses.length} icon={<BookOpen className="h-5 w-5" />} variant="primary" />
-            <StatCard label="Students" value={students.length} icon={<Users className="h-5 w-5" />} />
-            <StatCard label="Avg attendance" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} variant="success" />
-            <StatCard label="Records (30d)" value={trendRecs.length} icon={<QrCode className="h-5 w-5" />} variant="accent" />
-          </>
-        )}
-        {user.role === "admin" && (
-          <>
-            <StatCard label="Total students" value={students.length} icon={<Users className="h-5 w-5" />} variant="primary" />
-            <StatCard label="Active courses" value={courses.length} icon={<BookOpen className="h-5 w-5" />} />
-            <StatCard label="Campus attendance" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} variant="success" />
-            <StatCard label="Records (30d)" value={trendRecs.length} icon={<Clock className="h-5 w-5" />} variant="accent" />
+            <StatCard label="Student Base" value={students.length} icon={<Users className="h-5 w-5" />} description="Total Enrolled" variant="primary" />
+            <StatCard label="App Usage" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} description="Engagement Rate" variant="success" />
+            <StatCard label="Curriculum" value={courses.length} icon={<BookOpen className="h-5 w-5" />} description="Global Courses" />
+            <StatCard label="Logs (30d)" value={trendRecs.length} icon={<History className="h-5 w-5" />} description="Total Records" variant="accent" />
           </>
         )}
       </div>
 
-      {/* Charts row */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft lg:col-span-2">
-          <div className="mb-4">
-            <h3 className="font-display text-lg font-bold">Weekly attendance</h3>
-            <p className="text-xs text-muted-foreground">Last 5 days</p>
+      {/* Analytics Rows */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-8 shadow-elevated backdrop-blur-xl lg:col-span-2">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-xl font-bold tracking-tight">Personal Engagement</h3>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mt-1">Activity over 5 days</p>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black text-primary uppercase">
+              <Calendar className="h-3 w-3" /> Real-time
+            </div>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={weeklyTrend}>
               <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }} />
-              <Area type="monotone" dataKey="rate" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#g1)" />
+              <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={11} fontWeight={600} tick={{ fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} fontWeight={600} axisLine={false} tickLine={false} />
+              <Tooltip 
+                contentStyle={{ background: "rgba(255, 255, 255, 0.8)", backdropFilter: "blur(12px)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "16px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+                itemStyle={{ color: "hsl(var(--primary))", fontWeight: "bold" }}
+              />
+              <Area type="monotone" dataKey="rate" stroke="hsl(var(--primary))" strokeWidth={4} fill="url(#primaryGradient)" animationDuration={1500} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-          <div className="mb-4">
-            <h3 className="font-display text-lg font-bold">Monthly trend</h3>
-            <p className="text-xs text-muted-foreground">Past 4 weeks</p>
+        <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-8 shadow-elevated backdrop-blur-xl">
+          <div className="mb-8">
+            <h3 className="font-display text-xl font-bold tracking-tight text-foreground">Monthly Tally</h3>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest mt-1">Four-week progression</p>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }} />
-              <Bar dataKey="attendance" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} />
+              <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={11} fontWeight={600} axisLine={false} tickLine={false} />
+              <YAxis hide />
+              <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+              <Bar dataKey="attendance" fill="hsl(var(--accent))" radius={[10, 10, 0, 0]} animationDuration={2000} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft lg:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold">Recent activity</h3>
-            <Link to="/attendance" className="text-xs font-semibold text-primary hover:underline">View all</Link>
+      {/* Activity & Insight Section */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-8 shadow-elevated backdrop-blur-xl lg:col-span-2">
+          <div className="mb-8 flex items-center justify-between">
+            <h3 className="font-display text-xl font-bold tracking-tight">Recent Activity</h3>
+            <Link to="/attendance" className="group flex items-center gap-1 text-xs font-bold text-primary uppercase tracking-widest hover:opacity-80">
+              History <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
           {recentRows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No records yet.</p>
+            <div className="flex flex-col items-center justify-center py-10 opacity-40">
+              <History className="h-10 w-10 mb-2" />
+              <p className="text-sm italic">No recent activity detected.</p>
+            </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {recentRows.map((a: any) => {
-                const color = a.status === "present" ? "bg-success/10 text-success" : a.status === "late" ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive";
+                const isPresent = a.status === "present" || a.status === "late";
                 return (
-                  <div key={a.id} className="flex items-center gap-3 rounded-xl border border-border/60 bg-background p-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary text-primary-foreground">
-                      <BookOpen className="h-5 w-5" />
+                  <div key={a.id} className="group flex items-center gap-4 rounded-3xl border border-border/20 bg-background/40 p-4 transition-all hover:border-primary/30 hover:bg-background/60">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                      <BookOpen className="h-6 w-6" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{a.courses?.code ?? "—"}{a.students?.name ? ` · ${a.students.name}` : ""}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {a.method?.toUpperCase()} · {formatDistanceToNow(new Date(a.marked_at), { addSuffix: true })}
-                      </p>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex items-center gap-2">
+                         <p className="text-sm font-bold truncate text-foreground">{a.courses?.code ?? "CORE-101"}</p>
+                         <Badge variant="outline" className="text-[9px] font-black uppercase text-muted-foreground border-border/50">{a.method?.toUpperCase() || "SCAN"}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{a.students?.name || a.courses?.title || "Class Session"}</p>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${color}`}>{a.status}</span>
+                    <div className="text-right">
+                       <p className={`text-xs font-black uppercase tracking-tighter ${isPresent ? "text-emerald-500" : "text-destructive"}`}>
+                         {a.status}
+                       </p>
+                       <p className="text-[10px] font-bold text-muted-foreground mt-1">
+                         {formatDistanceToNow(new Date(a.marked_at), { addSuffix: true })}
+                       </p>
+                    </div>
                   </div>
                 );
               })}
@@ -270,43 +294,41 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl gradient-accent p-5 text-accent-foreground shadow-soft">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-          <Sparkles className="h-6 w-6" />
-          <h3 className="mt-3 font-display text-lg font-bold">AI Insight</h3>
-          <p className="mt-2 text-sm opacity-90">
-            Ask the AI assistant for personalized attendance insights and recommendations.
-          </p>
-          <Button asChild variant="secondary" size="sm" className="mt-4 bg-white/95 text-accent hover:bg-white">
-            <Link to="/ai-assistant">Ask the AI <Sparkles className="ml-1 h-3.5 w-3.5" /></Link>
-          </Button>
+        <div className="group relative overflow-hidden rounded-[2.5rem] border border-accent/20 bg-card/60 shadow-elevated backdrop-blur-xl">
+           <div className="absolute inset-0 gradient-accent opacity-5 transition-opacity group-hover:opacity-10" />
+           <div className="relative p-8">
+             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10 text-accent transition-transform group-hover:rotate-12 animate-float">
+               <Sparkles className="h-8 w-8 shadow-accent-glow" />
+             </div>
+             <h3 className="mt-8 font-display text-2xl font-black tracking-tight text-foreground">AI Intelligence</h3>
+             <p className="mt-4 text-sm font-medium leading-relaxed text-muted-foreground">
+               "Your attendance has increased by 12% this week. Keep showing up to your registered classes to secure eligibility!"
+             </p>
+             <Button asChild size="lg" className="mt-8 w-full rounded-2xl bg-accent text-white shadow-accent-glow hover:scale-105 active:scale-95 transition-all">
+               <Link to="/ai-assistant" className="font-bold">Consult Assistant</Link>
+             </Button>
+           </div>
         </div>
       </div>
 
-      {/* Notifications preview */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-lg font-bold">Latest notifications</h3>
-          <Link to="/notifications" className="text-xs font-semibold text-primary hover:underline">See all</Link>
-        </div>
-        {notifs.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">No notifications yet.</p>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {notifs.map((n) => (
-              <div key={n.id} className="flex items-start gap-3 rounded-xl border border-border/60 bg-background p-3">
-                <div className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${n.type === "success" ? "bg-success" : n.type === "warning" ? "bg-warning" : "bg-primary"}`} />
-                <div>
-                  <p className="text-sm font-semibold">{n.title}</p>
-                  <p className="text-xs text-muted-foreground">{n.message}</p>
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                  </p>
-                </div>
+      {/* Notifications Grid */}
+      <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-8 shadow-elevated backdrop-blur-xl">
+        <h3 className="mb-6 font-display text-xl font-bold tracking-tight">Recent Broadcasts</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {notifs.map((n) => (
+            <div key={n.id} className="relative flex items-start gap-4 rounded-3xl border border-border/10 bg-background/20 p-5 transition-all hover:bg-background/40">
+              <div className={`mt-1.5 h-2 w-2 shrink-0 rounded-full animate-pulse ${n.type === "success" ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : n.type === "warning" ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" : "bg-primary shadow-[0_0_10px_rgba(124,58,237,0.5)]"}`} />
+              <div>
+                <p className="text-sm font-black text-foreground">{n.title}</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground leading-snug">{n.message}</p>
+                <p className="mt-3 text-[9px] font-black uppercase tracking-widest text-primary/60">
+                   {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+          {notifs.length === 0 && <p className="col-span-2 text-center py-10 text-sm text-muted-foreground italic">Your inbox is clear.</p>}
+        </div>
       </div>
     </div>
   );

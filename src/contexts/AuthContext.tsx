@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Role, User } from "@/lib/mock-data";
@@ -13,6 +13,7 @@ interface AuthContextValue {
     name: string;
     role: Role;
     department: string;
+    level: string;
     matricNo?: string;
   }) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -23,36 +24,85 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
-  const [{ data: profile }, { data: roleRow }] = await Promise.all([
+  const [{ data: profile, error: pErr }, { data: roleRow }] = await Promise.all([
     supabase.from("profiles").select("*").eq("user_id", supaUser.id).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", supaUser.id).maybeSingle(),
   ]);
-  if (!profile) return null;
+
+  if (pErr) console.error("Profile fetch error:", pErr);
+
+  let finalProfile = profile;
+  let finalRole = roleRow?.role;
+
+  // Self-healing: if profile is missing, create it from metadata
+  if (!profile) {
+    console.warn("Profile missing for user, attempting self-healing...");
+    const meta = supaUser.user_metadata || {};
+    
+    // Create profile
+    const { data: newProfile, error: insErr } = await supabase.from("profiles").insert({
+      user_id: supaUser.id,
+      name: meta.name || supaUser.email?.split("@")[0] || "User",
+      email: supaUser.email,
+      department: meta.department || "",
+      level: meta.level || "",
+      matric_no: meta.matric_no || "",
+    }).select().single();
+
+    if (insErr) {
+      console.error("Self-healing profile creation failed:", insErr);
+      return null;
+    }
+
+    // Create role
+    const { error: rErr } = await supabase.from("user_roles").insert({
+      user_id: supaUser.id,
+      role: meta.role || "student"
+    });
+    
+    if (rErr) console.error("Self-healing role creation failed:", rErr);
+
+    finalProfile = newProfile;
+    finalRole = meta.role || "student";
+  }
+
+  if (!finalProfile) return null;
+
   return {
     id: supaUser.id,
-    name: profile.name || supaUser.email || "",
-    email: profile.email || supaUser.email || "",
-    role: (roleRow?.role as Role) ?? "student",
-    department: profile.department ?? "",
-    matricNo: profile.matric_no || undefined,
+    name: finalProfile.name || supaUser.email || "",
+    email: finalProfile.email || supaUser.email || "",
+    role: (finalRole as Role) ?? "student",
+    department: finalProfile.department ?? "",
+    level: finalProfile.level ?? "",
+    matricNo: finalProfile.matric_no || undefined,
   };
 }
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const checkUser = async (supaUser: SupabaseUser) => {
+      if (loadingRef.current === supaUser.id) return;
+      loadingRef.current = supaUser.id;
+      try {
+        const u = await loadUser(supaUser);
+        setUser(u);
+      } finally {
+        setLoading(false);
+        loadingRef.current = null;
+      }
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
       if (newSession?.user) {
-        setTimeout(() => {
-          loadUser(newSession.user).then((u) => {
-            setUser(u);
-            setLoading(false);
-          });
-        }, 0);
+        await checkUser(newSession.user);
       } else {
         setUser(null);
         setLoading(false);
@@ -62,10 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: existing } }) => {
       setSession(existing);
       if (existing?.user) {
-        loadUser(existing.user).then((u) => {
-          setUser(u);
-          setLoading(false);
-        });
+        checkUser(existing.user);
       } else {
         setLoading(false);
       }
@@ -80,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name,
     role,
     department,
+    level,
     matricNo,
   }) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -88,10 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: { name, role, department, matric_no: matricNo ?? "" },
+        data: { name, role, department, level, matric_no: matricNo ?? "" },
       },
     });
+    if (error) console.error("SignUp Debug Error:", error);
     return { error: error?.message ?? null };
+
   };
 
   const signIn: AuthContextValue["signIn"] = async (email, password) => {
@@ -113,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: data.name ?? user.name,
         email: data.email ?? user.email,
         department: data.department ?? user.department,
+        level: data.level ?? user.level,
         matric_no: data.matricNo ?? user.matricNo ?? "",
       })
       .eq("user_id", user.id);

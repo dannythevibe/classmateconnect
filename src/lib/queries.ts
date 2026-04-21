@@ -8,6 +8,9 @@ export type Course = {
   schedule: string;
   room: string;
   color: string;
+  level: string | null;
+  department: string | null;
+  lecturer_name?: string;
   created_at: string;
 };
 
@@ -23,22 +26,45 @@ export type Student = {
 export type AttendanceSession = {
   id: string;
   course_id: string;
-  lecturer_id: string;
   token: string;
   started_at: string;
   expires_at: string;
   room: string;
+  latitude: number | null;
+  longitude: number | null;
+  late_cutoff_mins: number;
 };
+
 
 export type AttendanceRecord = {
   id: string;
   session_id: string | null;
   course_id: string;
   student_id: string;
-  status: "present" | "late" | "absent";
+  status: "present" | "late" | "absent" | "excused";
   method: "qr" | "manual" | "gps";
   marked_at: string;
+  latitude: number | null;
+  longitude: number | null;
+  metadata: any;
+  excuse_id?: string;
 };
+
+export type AttendanceExcuse = {
+  id: string;
+  student_id: string;
+  course_id: string;
+  session_id: string | null;
+  reason: string;
+  attachment_url: string | null;
+  status: "pending" | "approved" | "rejected";
+  lecturer_comment: string | null;
+  created_at: string;
+  student_name?: string;
+  course_code?: string;
+};
+
+
 
 export type NotificationRow = {
   id: string;
@@ -59,10 +85,16 @@ export const courseColors = [
   "from-indigo-500 to-purple-500",
 ];
 
-export async function fetchCourses(): Promise<Course[]> {
-  const { data, error } = await supabase.from("courses").select("*").order("created_at", { ascending: false });
+export async function fetchCourses() {
+  const { data, error } = await supabase
+    .from("courses")
+    .select("*, profiles!courses_lecturer_id_fkey(name)");
   if (error) throw error;
-  return (data ?? []) as Course[];
+  
+  return (data ?? []).map((c: any) => ({
+    ...c,
+    lecturer_name: c.profiles?.name || "Unknown Lecturer",
+  })) as Course[];
 }
 
 export async function fetchStudents(): Promise<Student[]> {
@@ -116,16 +148,17 @@ export async function fetchActiveSessionForCourse(courseId: string): Promise<Att
   return data as AttendanceSession | null;
 }
 
-export async function fetchActiveSessionByToken(token: string): Promise<AttendanceSession | null> {
+export async function fetchActiveSessionByToken(token: string): Promise<(AttendanceSession & { courses: { code: string; room: string } }) | null> {
   const { data, error } = await supabase
     .from("attendance_sessions")
-    .select("*")
+    .select("*, courses(code, room)")
     .eq("token", token)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
   if (error) throw error;
-  return data as AttendanceSession | null;
+  return data as any;
 }
+
 
 export async function fetchMyStudentRow(matricNo: string | undefined): Promise<Student | null> {
   if (!matricNo) return null;
@@ -137,3 +170,46 @@ export async function fetchMyStudentRow(matricNo: string | undefined): Promise<S
   if (error) throw error;
   return data as Student | null;
 }
+
+export async function fetchStudentEnrollments(studentId: string) {
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select("course_id")
+    .eq("student_id", studentId);
+  if (error) throw error;
+  return (data ?? []).map(e => e.course_id);
+}
+
+export async function enrollInCourse(studentId: string, courseId: string) {
+  const { error } = await supabase
+    .from("enrollments")
+    .insert({ student_id: studentId, course_id: courseId });
+  if (error) throw error;
+}
+
+export async function unenrollFromCourse(studentId: string, courseId: string) {
+  const { error } = await supabase
+    .from("enrollments")
+    .delete()
+    .eq("student_id", studentId)
+    .eq("course_id", courseId);
+  if (error) throw error;
+}
+
+export async function createNotification(userId: string, title: string, message: string, type: "info" | "warning" | "success" = "info") {
+  const { error } = await supabase.from("notifications").insert({
+    user_id: userId,
+    title,
+    message,
+    type
+  });
+  if (error) console.error("Notification Error:", error);
+}
+
+export async function fetchAllAttendanceRecords() {
+  const { data, error } = await supabase.from("attendance_records").select("*");
+  if (error) throw error;
+  return data ?? [];
+}
+
+

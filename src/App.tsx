@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,19 +16,28 @@ import Reports from "./pages/Reports";
 import AIAssistant from "./pages/AIAssistant";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import Timetable from "./pages/Timetable";
 import AdminUsers from "./pages/AdminUsers";
 import NotFound from "./pages/NotFound";
+
+import SyncManager from "./components/SyncManager";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <SyncManager />
       <Toaster />
       <Sonner />
+
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Admin Routes */}
+            <Route path="/admin/*" element={<AppLayout><AdminUsers /></AppLayout>} />
+            
+            {/* Base Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
@@ -38,8 +47,9 @@ const App = () => (
             <Route path="/reports" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><Reports /></AppLayout></ProtectedRoute>} />
             <Route path="/ai-assistant" element={<ProtectedRoute><AppLayout><AIAssistant /></AppLayout></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
+            <Route path="/timetable" element={<ProtectedRoute><AppLayout><Timetable /></AppLayout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute><AppLayout><AdminUsers /></AppLayout></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet, FileText, BarChart3 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
+import { exportToCSV } from "@/lib/export";
+
 
 async function fetchTrendData() {
   // Last 35 days of records, aggregated client-side
@@ -71,16 +73,27 @@ export default function Reports() {
           <p className="text-sm text-muted-foreground">Track attendance trends across courses</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast.info("PDF export coming soon")}>
-            <FileText className="mr-2 h-4 w-4" /> PDF
+          <Button variant="outline" onClick={() => {
+            if (records.length === 0) { toast.error("No data to export"); return; }
+            exportToCSV(records, "attendance_trends");
+            toast.success("Trends exported as CSV");
+          }}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel / CSV
           </Button>
-          <Button variant="outline" onClick={() => toast.info("Excel export coming soon")}>
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Excel
-          </Button>
-          <Button onClick={() => toast.info("Report download coming soon")} className="gradient-primary shadow-glow">
-            <Download className="mr-2 h-4 w-4" /> Download
+          <Button onClick={() => {
+            const summary = courses.map(c => ({
+              code: c.code,
+              title: c.title,
+              lecturer: c.lecturer_name,
+              attendance_rate: `${rates[c.id] ?? 0}%`
+            }));
+            exportToCSV(summary, "course_attendance_summary");
+            toast.success("Summary exported");
+          }} className="gradient-primary shadow-glow">
+            <Download className="mr-2 h-4 w-4" /> Export Summary
           </Button>
         </div>
+
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

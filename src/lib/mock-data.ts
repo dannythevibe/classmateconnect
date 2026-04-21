@@ -8,5 +8,7 @@ export interface User {
   role: Role;
   matricNo?: string;
   department: string;
+  level: string;
   avatar?: string;
 }
+

@@ -67,6 +67,7 @@ export default function Profile() {
           {[
             { icon: Bell, title: "Push notifications", desc: "Get alerts when sessions open" },
             { icon: WifiOff, title: "Offline mode", desc: "Cache attendance & sync later" },
+            { icon: Sparkles, title: "Guided tour", desc: "Re-watch the platform onboarding" },
             { icon: Smartphone, title: "One-tap attendance", desc: "Simplified mobile flow" },
           ].map((p) => (
             <div key={p.title} className="rounded-xl border border-border p-4">
@@ -75,9 +76,19 @@ export default function Profile() {
               </div>
               <p className="mt-3 text-sm font-semibold">{p.title}</p>
               <p className="text-xs text-muted-foreground">{p.desc}</p>
-              <Button size="sm" variant="ghost" className="mt-2 px-0 text-primary hover:bg-transparent" onClick={() => toast.success(`${p.title} toggled`)}>Toggle</Button>
+              <Button size="sm" variant="ghost" className="mt-2 px-0 text-primary hover:bg-transparent" onClick={() => {
+                if (p.title === "Guided tour") {
+                  (window as any).restartOnboarding?.();
+                  toast.success("Tutorial restarted");
+                } else {
+                  toast.success(`${p.title} toggled`);
+                }
+              }}>
+                {p.title === "Guided tour" ? "Restart" : "Toggle"}
+              </Button>
             </div>
           ))}
+
         </div>
       </div>
     </div>

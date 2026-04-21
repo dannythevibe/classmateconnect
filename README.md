@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Attendly — Smart Student Attendance
 
 TODO: Document your project here
