@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, KeyRound, Save, Smartphone, WifiOff, Bell } from "lucide-react";
+import { Mail, KeyRound, Save, Smartphone, WifiOff, Bell, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Profile() {

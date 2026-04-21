@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Sparkles, ChevronRight, X, LayoutDashboard, QrCode, BookOpen, Calendar, ClipboardCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
