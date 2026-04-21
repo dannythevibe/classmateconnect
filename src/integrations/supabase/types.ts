@@ -14,12 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_excuses: {
+        Row: {
+          attachment_url: string | null
+          course_id: string
+          created_at: string
+          id: string
+          lecturer_comment: string | null
+          reason: string
+          session_id: string | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          lecturer_comment?: string | null
+          reason: string
+          session_id?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_url?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          lecturer_comment?: string | null
+          reason?: string
+          session_id?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_excuses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_excuses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_excuses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_records: {
         Row: {
           course_id: string
           created_at: string
+          excuse_id: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           marked_at: string
+          metadata: Json | null
           method: Database["public"]["Enums"]["attendance_method"]
           session_id: string | null
           status: Database["public"]["Enums"]["attendance_status"]
@@ -28,8 +93,12 @@ export type Database = {
         Insert: {
           course_id: string
           created_at?: string
+          excuse_id?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           marked_at?: string
+          metadata?: Json | null
           method?: Database["public"]["Enums"]["attendance_method"]
           session_id?: string | null
           status?: Database["public"]["Enums"]["attendance_status"]
@@ -38,8 +107,12 @@ export type Database = {
         Update: {
           course_id?: string
           created_at?: string
+          excuse_id?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           marked_at?: string
+          metadata?: Json | null
           method?: Database["public"]["Enums"]["attendance_method"]
           session_id?: string | null
           status?: Database["public"]["Enums"]["attendance_status"]
@@ -51,6 +124,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_excuse_id_fkey"
+            columns: ["excuse_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_excuses"
             referencedColumns: ["id"]
           },
           {
@@ -75,7 +155,10 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          late_cutoff_mins: number | null
+          latitude: number | null
           lecturer_id: string
+          longitude: number | null
           room: string
           started_at: string
           token: string
@@ -85,7 +168,10 @@ export type Database = {
           created_at?: string
           expires_at: string
           id?: string
+          late_cutoff_mins?: number | null
+          latitude?: number | null
           lecturer_id: string
+          longitude?: number | null
           room?: string
           started_at?: string
           token: string
@@ -95,7 +181,10 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          late_cutoff_mins?: number | null
+          latitude?: number | null
           lecturer_id?: string
+          longitude?: number | null
           room?: string
           started_at?: string
           token?: string
@@ -330,7 +419,7 @@ export type Database = {
     Enums: {
       app_role: "student" | "lecturer" | "admin"
       attendance_method: "qr" | "manual" | "gps"
-      attendance_status: "present" | "late" | "absent"
+      attendance_status: "present" | "late" | "absent" | "excused"
       notification_type: "info" | "warning" | "success"
     }
     CompositeTypes: {
@@ -461,7 +550,7 @@ export const Constants = {
     Enums: {
       app_role: ["student", "lecturer", "admin"],
       attendance_method: ["qr", "manual", "gps"],
-      attendance_status: ["present", "late", "absent"],
+      attendance_status: ["present", "late", "absent", "excused"],
       notification_type: ["info", "warning", "success"],
     },
   },
