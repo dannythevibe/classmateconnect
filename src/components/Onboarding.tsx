@@ -60,7 +60,9 @@ export default function Onboarding() {
   // Expose reset to window for the Profile page to call
   useEffect(() => {
     (window as any).restartOnboarding = reset;
-    return () => delete (window as any).restartOnboarding;
+    return () => {
+      delete (window as any).restartOnboarding;
+    };
   }, []);
 
   if (!show || !user || user.role === "admin") return null;
