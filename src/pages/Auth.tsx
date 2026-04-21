@@ -77,9 +77,19 @@ export default function Auth() {
       department: parsed.data.department,
       level: parsed.data.level,
     });
+    if (error) {
+      setSubmitting(false);
+      toast.error(error);
+      return;
+    }
+    // If email confirmation is on, no session is returned. Sign the user in immediately.
+    const { error: siErr } = await signIn(parsed.data.email, parsed.data.password);
     setSubmitting(false);
-    if (error) toast.error(error);
-    else toast.success("Account created successfully!");
+    if (siErr) {
+      toast.success("Account created! Please sign in.");
+    } else {
+      toast.success("Welcome to Attendly!");
+    }
   };
 
 
