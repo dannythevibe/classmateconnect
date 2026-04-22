@@ -113,7 +113,12 @@ export default function AdminUsers() {
 
   // Combined student list: profiles (self sign-up) + students table records
   const allStudents = useMemo(() => {
-    const fromProfiles = studentUsers.map(u => ({
+    type MergedStudent = {
+      key: string; name: string; email: string; matric_no: string;
+      department: string; level: string; source: "self-signup" | "admin-added";
+      user_id?: string; record_id?: string;
+    };
+    const fromProfiles: MergedStudent[] = studentUsers.map(u => ({
       key: `p-${u.user_id}`,
       name: u.name,
       email: u.email,
