@@ -15,9 +15,10 @@ const signUpSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(100),
   email: z.string().trim().email("Invalid email").max(255),
   password: z.string().min(6, "Min 6 characters").max(72),
-  role: z.enum(["student", "lecturer", "admin"]),
+  role: z.enum(["student", "lecturer"]),
   department: z.string().trim().min(1, "Department required").max(100),
   level: z.string().min(1, "Level required"),
+  matric_no: z.string().trim().max(50).optional(),
 });
 
 const signInSchema = z.object({
@@ -39,6 +40,7 @@ export default function Auth() {
     role: "student" as Role,
     department: "",
     level: "100",
+    matric_no: "",
   });
 
 
@@ -76,6 +78,7 @@ export default function Auth() {
       role: parsed.data.role,
       department: parsed.data.department,
       level: parsed.data.level,
+      matricNo: parsed.data.matric_no,
     });
     if (error) {
       setSubmitting(false);
