@@ -68,6 +68,24 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
 
   if (!finalProfile) return null;
 
+  // Auto-create matching students row for student accounts (so attendance works).
+  if (finalRole === "student" && finalProfile.matric_no) {
+    const { data: existing } = await supabase
+      .from("students")
+      .select("id")
+      .eq("matric_no", finalProfile.matric_no)
+      .maybeSingle();
+    if (!existing) {
+      await supabase.from("students").insert({
+        name: finalProfile.name || "",
+        matric_no: finalProfile.matric_no,
+        department: finalProfile.department || "",
+        level: finalProfile.level || "",
+        created_by: supaUser.id,
+      });
+    }
+  }
+
   return {
     id: supaUser.id,
     name: finalProfile.name || supaUser.email || "",

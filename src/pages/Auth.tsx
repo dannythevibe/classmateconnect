@@ -15,9 +15,10 @@ const signUpSchema = z.object({
   name: z.string().trim().min(1, "Name required").max(100),
   email: z.string().trim().email("Invalid email").max(255),
   password: z.string().min(6, "Min 6 characters").max(72),
-  role: z.enum(["student", "lecturer", "admin"]),
+  role: z.enum(["student", "lecturer"]),
   department: z.string().trim().min(1, "Department required").max(100),
   level: z.string().min(1, "Level required"),
+  matric_no: z.string().trim().max(50).optional(),
 });
 
 const signInSchema = z.object({
@@ -39,6 +40,7 @@ export default function Auth() {
     role: "student" as Role,
     department: "",
     level: "100",
+    matric_no: "",
   });
 
 
@@ -76,6 +78,7 @@ export default function Auth() {
       role: parsed.data.role,
       department: parsed.data.department,
       level: parsed.data.level,
+      matricNo: parsed.data.matric_no,
     });
     if (error) {
       setSubmitting(false);
@@ -159,6 +162,7 @@ export default function Auth() {
                           <SelectItem value="student">Student</SelectItem>
                           <SelectItem value="lecturer">Lecturer</SelectItem>
                         </SelectContent>
+                        {/* Admin accounts are created by an existing admin from the Admin panel. */}
                       </Select>
                     </div>
                   </div>
@@ -179,6 +183,31 @@ export default function Auth() {
                         onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} className="rounded-xl bg-background/50" />
                     </div>
                   </div>
+
+                  {signUpData.role === "student" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="su-matric">Matric Number</Label>
+                        <Input id="su-matric" placeholder="CSC/2021/045" value={signUpData.matric_no}
+                          onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} className="rounded-xl bg-background/50" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="su-level">Level</Label>
+                        <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
+                          <SelectTrigger id="su-level" className="rounded-xl bg-background/50">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="200">200</SelectItem>
+                            <SelectItem value="300">300</SelectItem>
+                            <SelectItem value="400">400</SelectItem>
+                            <SelectItem value="500">500</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
 
                   <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl gradient-primary text-base font-bold shadow-glow transition-all active:scale-95 mt-4">
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Get Started"}

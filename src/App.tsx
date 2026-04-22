@@ -35,7 +35,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Admin Routes */}
-            <Route path="/admin/*" element={<AppLayout><AdminUsers /></AppLayout>} />
+            <Route path="/admin/*" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminUsers /></AppLayout></ProtectedRoute>} />
             
             {/* Base Routes */}
             <Route path="/" element={<Landing />} />

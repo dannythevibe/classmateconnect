@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { exportToCSV } from "@/lib/export";
+import NewLecturerDialog from "@/components/dialogs/NewLecturerDialog";
+import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
+import NewCourseDialog from "@/components/dialogs/NewCourseDialog";
 
 
 
@@ -87,6 +90,14 @@ export default function AdminUsers() {
   const { data: users = [], isLoading: usersLoading } = useQuery({ queryKey: ["admin-users"], queryFn: fetchUsers });
   const { data: logs = [], isLoading: logsLoading } = useQuery({ queryKey: ["global-attendance"], queryFn: fetchGlobalAttendance });
   
+  const { data: courseCount = 0 } = useQuery({
+    queryKey: ["admin-course-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("courses").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
   const [busyId, setBusyId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -146,11 +157,14 @@ export default function AdminUsers() {
              <p className="text-sm text-muted-foreground font-medium">Global governance and user orchestration.</p>
            </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+           <NewLecturerDialog />
+           <NewStudentDialog />
+           <NewCourseDialog />
            <Button variant="outline" className="h-12 rounded-2xl border-border/40 font-bold px-6 shadow-soft hover:bg-muted" onClick={() => qc.invalidateQueries()}>
-             <RefreshCw className="mr-2 h-4 w-4" /> Sync Now
+             <RefreshCw className="mr-2 h-4 w-4" /> Sync
            </Button>
-            <Button 
+            <Button
               onClick={() => {
                 const data = filteredUsers.map(u => ({
                   Name: u.name,
@@ -164,7 +178,7 @@ export default function AdminUsers() {
               }}
               className="h-12 rounded-2xl gradient-primary font-bold px-6 text-white shadow-glow"
             >
-              <Download className="mr-2 h-4 w-4" /> Export DB
+              <Download className="mr-2 h-4 w-4" /> Export
             </Button>
 
         </div>
@@ -172,10 +186,10 @@ export default function AdminUsers() {
 
       {/* Stats Cluster */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Accounts" value={stats.total} icon={Users} color="text-primary" bgColor="bg-primary/10" desc="Registered Users" />
-        <StatCard title="Attendance Active" value={logs.length} icon={TrendingUp} color="text-emerald-500" bgColor="bg-emerald-500/10" desc="Last 100 Logs" />
-        <StatCard title="Teaching Staff" value={stats.lecturers} icon={ShieldCheck} color="text-blue-500" bgColor="bg-blue-500/10" desc="Active Lecturers" />
-        <StatCard title="System Admins" value={stats.admins} icon={CheckCircle2} color="text-purple-500" bgColor="bg-purple-500/10" desc="Full Permissions" />
+        <StatCard title="Students" value={stats.students} icon={Users} color="text-emerald-500" bgColor="bg-emerald-500/10" desc="Enrolled" />
+        <StatCard title="Lecturers" value={stats.lecturers} icon={ShieldCheck} color="text-blue-500" bgColor="bg-blue-500/10" desc="Teaching Staff" />
+        <StatCard title="Courses" value={courseCount} icon={TrendingUp} color="text-primary" bgColor="bg-primary/10" desc="In catalog" />
+        <StatCard title="Admins" value={stats.admins} icon={CheckCircle2} color="text-purple-500" bgColor="bg-purple-500/10" desc="Full access" />
       </div>
 
       <Tabs defaultValue="users" className="space-y-8">
