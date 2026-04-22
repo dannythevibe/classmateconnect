@@ -125,10 +125,22 @@ export default function AdminUsers() {
       matric_no: u.matric_no || "",
       department: u.department || "",
       level: "",
-      source: "self-signup" as const,
+      source: "self-signup",
       user_id: u.user_id,
-      record_id: undefined as string | undefined,
     }));
+    const fromRecords: MergedStudent[] = studentRecords.map(s => ({
+      key: `s-${s.id}`,
+      name: s.name,
+      email: "",
+      matric_no: s.matric_no,
+      department: s.department,
+      level: s.level,
+      source: "admin-added",
+      record_id: s.id,
+    }));
+    // Dedupe by matric_no when both exist
+    const seen = new Set<string>();
+    const merged: MergedStudent[] = [];
     const fromRecords = studentRecords.map(s => ({
       key: `s-${s.id}`,
       name: s.name,
