@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
   { to: "/timetable", label: "Timetable", icon: Calendar, roles: ["student", "lecturer", "admin"] },
   { to: "/profile", label: "Profile", icon: UserIcon, roles: ["student", "lecturer", "admin"] },
 
-  { to: "/admin", label: "Admin Panel", icon: ShieldCheck, roles: ["student", "lecturer", "admin"] },
+  { to: "/admin", label: "Admin Panel", icon: ShieldCheck, roles: ["admin"] },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
