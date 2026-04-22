@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { exportToCSV } from "@/lib/export";
+import NewLecturerDialog from "@/components/dialogs/NewLecturerDialog";
+import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
+import NewCourseDialog from "@/components/dialogs/NewCourseDialog";
 
 
 
@@ -146,11 +149,14 @@ export default function AdminUsers() {
              <p className="text-sm text-muted-foreground font-medium">Global governance and user orchestration.</p>
            </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+           <NewLecturerDialog />
+           <NewStudentDialog />
+           <NewCourseDialog />
            <Button variant="outline" className="h-12 rounded-2xl border-border/40 font-bold px-6 shadow-soft hover:bg-muted" onClick={() => qc.invalidateQueries()}>
-             <RefreshCw className="mr-2 h-4 w-4" /> Sync Now
+             <RefreshCw className="mr-2 h-4 w-4" /> Sync
            </Button>
-            <Button 
+            <Button
               onClick={() => {
                 const data = filteredUsers.map(u => ({
                   Name: u.name,
@@ -164,7 +170,7 @@ export default function AdminUsers() {
               }}
               className="h-12 rounded-2xl gradient-primary font-bold px-6 text-white shadow-glow"
             >
-              <Download className="mr-2 h-4 w-4" /> Export DB
+              <Download className="mr-2 h-4 w-4" /> Export
             </Button>
 
         </div>
