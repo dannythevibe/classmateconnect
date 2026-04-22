@@ -141,20 +141,6 @@ export default function AdminUsers() {
     // Dedupe by matric_no when both exist
     const seen = new Set<string>();
     const merged: MergedStudent[] = [];
-    const fromRecords = studentRecords.map(s => ({
-      key: `s-${s.id}`,
-      name: s.name,
-      email: "",
-      matric_no: s.matric_no,
-      department: s.department,
-      level: s.level,
-      source: "admin-added" as const,
-      user_id: undefined as string | undefined,
-      record_id: s.id,
-    }));
-    // Dedupe by matric_no when both exist
-    const seen = new Set<string>();
-    const merged: typeof fromProfiles = [];
     [...fromProfiles, ...fromRecords].forEach(s => {
       const k = s.matric_no?.trim().toLowerCase();
       if (k && seen.has(k)) return;
