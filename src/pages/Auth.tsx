@@ -184,6 +184,31 @@ export default function Auth() {
                     </div>
                   </div>
 
+                  {signUpData.role === "student" && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="su-matric">Matric Number</Label>
+                        <Input id="su-matric" placeholder="CSC/2021/045" value={signUpData.matric_no}
+                          onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} className="rounded-xl bg-background/50" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="su-level">Level</Label>
+                        <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
+                          <SelectTrigger id="su-level" className="rounded-xl bg-background/50">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="200">200</SelectItem>
+                            <SelectItem value="300">300</SelectItem>
+                            <SelectItem value="400">400</SelectItem>
+                            <SelectItem value="500">500</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
                   <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl gradient-primary text-base font-bold shadow-glow transition-all active:scale-95 mt-4">
                     {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Get Started"}
                   </Button>
