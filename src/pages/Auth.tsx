@@ -159,6 +159,7 @@ export default function Auth() {
                           <SelectItem value="student">Student</SelectItem>
                           <SelectItem value="lecturer">Lecturer</SelectItem>
                         </SelectContent>
+                        {/* Admin accounts are created by an existing admin from the Admin panel. */}
                       </Select>
                     </div>
                   </div>
