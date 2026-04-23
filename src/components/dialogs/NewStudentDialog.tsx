@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+
+async function fetchDepartments() {
+  const { data, error } = await supabase
+    .from("departments")
+    .select("name")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
 
 const schema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -22,6 +32,12 @@ export default function NewStudentDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", matric_no: "", department: "", level: "100" });
+
+  const { data: departmentOptions = [] } = useQuery({
+    queryKey: ["admin-departments-list"],
+    queryFn: fetchDepartments,
+    enabled: open,
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -56,7 +72,21 @@ export default function NewStudentDialog() {
           <div><Label>Full name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div><Label>Matric number</Label><Input value={form.matric_no} onChange={(e) => setForm({ ...form, matric_no: e.target.value })} placeholder="CSC/2021/045" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Department</Label><Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></div>
+            <div>
+              <Label>Department</Label>
+              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Dept" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departmentOptions.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">No departments.</div>
+                  ) : departmentOptions.map((d) => (
+                    <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Level</Label><Input value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })} /></div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Plus, Loader2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+
+async function fetchDepartments() {
+  const { data, error } = await supabase
+    .from("departments")
+    .select("name")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name required").max(100),
@@ -20,6 +30,12 @@ export default function NewLecturerDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", department: "" });
+
+  const { data: departmentOptions = [] } = useQuery({
+    queryKey: ["admin-departments-list"],
+    queryFn: fetchDepartments,
+    enabled: open,
+  });
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -73,7 +89,18 @@ export default function NewLecturerDialog() {
           </div>
           <div>
             <Label>Department</Label>
-            <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="Computer Science" />
+            <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departmentOptions.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">No departments.</div>
+                ) : departmentOptions.map((d) => (
+                  <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter className="gap-2">

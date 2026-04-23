@@ -22,6 +22,7 @@ import { exportToCSV } from "@/lib/export";
 import NewLecturerDialog from "@/components/dialogs/NewLecturerDialog";
 import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
 import NewCourseDialog from "@/components/dialogs/NewCourseDialog";
+import NewDepartmentDialog from "@/components/dialogs/NewDepartmentDialog";
 
 type Role = "student" | "lecturer" | "admin";
 
@@ -97,15 +98,26 @@ async function fetchCourses(): Promise<CourseRow[]> {
   return (courses ?? []).map((c: any) => ({ ...c, lecturer_name: nameMap.get(c.lecturer_id) || "Unassigned" }));
 }
 
+async function fetchDepartments() {
+  const { data, error } = await supabase
+    .from("departments")
+    .select("*")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 export default function AdminUsers() {
   const { user: currentUser } = useAuth();
   const qc = useQueryClient();
   const { data: users = [], isLoading: usersLoading } = useQuery({ queryKey: ["admin-users"], queryFn: fetchUsers });
   const { data: studentRecords = [], isLoading: studentsLoading } = useQuery({ queryKey: ["admin-students"], queryFn: fetchStudents });
   const { data: courses = [], isLoading: coursesLoading } = useQuery({ queryKey: ["admin-courses"], queryFn: fetchCourses });
+  const { data: officialDepartments = [], isLoading: deptsLoading } = useQuery({ queryKey: ["admin-departments"], queryFn: fetchDepartments });
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("lecturers");
 
   const lecturers = useMemo(() => users.filter(u => u.role === "lecturer"), [users]);
   const studentUsers = useMemo(() => users.filter(u => u.role === "student"), [users]);
@@ -151,10 +163,16 @@ export default function AdminUsers() {
   }, [studentUsers, studentRecords]);
 
   const departments = useMemo(() => {
-    const map = new Map<string, { lecturers: number; students: number; courses: number }>();
+    const map = new Map<string, { lecturers: number; students: number; courses: number; isOfficial: boolean; id?: string }>();
+    
+    // Initialize with official departments
+    officialDepartments.forEach(d => {
+      map.set(d.name, { lecturers: 0, students: 0, courses: 0, isOfficial: true, id: d.id });
+    });
+
     const bump = (dept: string, key: "lecturers" | "students" | "courses") => {
       const d = (dept || "Unassigned").trim() || "Unassigned";
-      if (!map.has(d)) map.set(d, { lecturers: 0, students: 0, courses: 0 });
+      if (!map.has(d)) map.set(d, { lecturers: 0, students: 0, courses: 0, isOfficial: false });
       map.get(d)![key]++;
     };
     lecturers.forEach(l => bump(l.department || "", "lecturers"));
@@ -163,7 +181,7 @@ export default function AdminUsers() {
     return Array.from(map.entries())
       .map(([name, v]) => ({ name, ...v }))
       .sort((a, b) => (b.lecturers + b.students + b.courses) - (a.lecturers + a.students + a.courses));
-  }, [lecturers, allStudents, courses]);
+  }, [lecturers, allStudents, courses, officialDepartments]);
 
   const filterText = (val: string) => val.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -209,6 +227,15 @@ export default function AdminUsers() {
     qc.invalidateQueries({ queryKey: ["admin-courses"] });
   };
 
+  const deleteDepartment = async (id: string) => {
+    setBusyId(id);
+    const { error } = await supabase.from("departments").delete().eq("id", id);
+    setBusyId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Department removed");
+    qc.invalidateQueries({ queryKey: ["admin-departments"] });
+  };
+
   return (
     <div className="mx-auto max-w-7xl animate-in fade-in duration-700 space-y-10 pb-20">
       <header className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -222,9 +249,15 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <NewLecturerDialog />
-          <NewStudentDialog />
-          <NewCourseDialog />
+          {activeTab === "departments" ? (
+            <NewDepartmentDialog />
+          ) : (
+            <>
+              <NewLecturerDialog />
+              <NewStudentDialog />
+              <NewCourseDialog />
+            </>
+          )}
           <Button variant="outline" className="h-12 rounded-2xl border-border/40 font-bold px-6 shadow-soft hover:bg-muted" onClick={() => qc.invalidateQueries()}>
             <RefreshCw className="mr-2 h-4 w-4" /> Sync
           </Button>
@@ -239,7 +272,7 @@ export default function AdminUsers() {
         <StatCard title="Departments" value={departments.length} icon={Building2} color="text-purple-500" bgColor="bg-purple-500/10" desc="Active" />
       </div>
 
-      <Tabs defaultValue="lecturers" className="space-y-6">
+      <Tabs defaultValue="lecturers" className="space-y-6" onValueChange={setActiveTab}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-border/40 pb-4">
           <TabsList className="h-14 bg-muted/30 p-1.5 rounded-[1.5rem] backdrop-blur-xl border border-border/40 shrink-0">
             <TabsTrigger value="lecturers" className="h-full rounded-xl data-[state=active]:bg-background data-[state=active]:text-primary px-6 font-bold text-xs uppercase tracking-widest">Lecturers</TabsTrigger>
@@ -385,21 +418,33 @@ export default function AdminUsers() {
 
         {/* DEPARTMENTS */}
         <TabsContent value="departments" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {departments.length === 0 ? (
+          {deptsLoading ? (
+            <div className="py-20 text-center"><Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" /></div>
+          ) : departments.length === 0 ? (
             <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-20 text-center text-muted-foreground italic font-bold">
               No department data yet.
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {departments.map(d => (
-                <div key={d.name} className="rounded-[2rem] border border-border/40 bg-card/60 backdrop-blur-xl p-7 shadow-soft hover:shadow-elevated transition-all">
+                <div key={d.name} className="rounded-[2rem] border border-border/40 bg-card/60 backdrop-blur-xl p-7 shadow-soft hover:shadow-elevated transition-all group relative">
+                  {d.isOfficial && (
+                    <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DeleteBtn disabled={busyId === d.id} onConfirm={() => d.id && deleteDepartment(d.id)} name={d.name} />
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 mb-5">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10">
                       <Building2 className="h-6 w-6 text-purple-500" />
                     </div>
                     <div>
-                      <h3 className="font-display text-lg font-black tracking-tight text-foreground leading-tight">{d.name}</h3>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">Department</p>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display text-lg font-black tracking-tight text-foreground leading-tight">{d.name}</h3>
+                        {d.isOfficial && <CheckCircle2 className="h-3.5 w-3.5 text-purple-500" />}
+                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
+                        {d.isOfficial ? "Official System Dept" : "Ad-hoc (from records)"}
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-3">

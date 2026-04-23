@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 import Onboarding from "./Onboarding";
 
 
@@ -21,21 +22,29 @@ interface NavItem {
   label: string;
   icon: any;
   roles: Role[];
+  section?: string;
 }
 
 const navItems: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["student", "lecturer", "admin"] },
-  { to: "/courses", label: "My Courses", icon: BookOpen, roles: ["student", "lecturer", "admin"] },
-  { to: "/students", label: "Students", icon: Users, roles: ["lecturer", "admin"] },
-  { to: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["student", "lecturer"] },
-  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["lecturer", "admin"] },
-  { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, roles: ["student", "lecturer", "admin"] },
-  { to: "/notifications", label: "Notifications", icon: Bell, roles: ["student", "lecturer", "admin"] },
+  // MAIN SECTION
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["student", "lecturer", "admin"], section: "Main" },
+  { to: "/courses", label: "My Courses", icon: BookOpen, roles: ["student", "lecturer"], section: "Main" },
+  { to: "/attendance", label: "Attendance", icon: ClipboardCheck, roles: ["student", "lecturer"], section: "Main" },
+  
+  // ACADEMIC SECTION
+  { to: "/timetable", label: "Timetable", icon: Calendar, roles: ["student", "lecturer", "admin"], section: "Academic" },
+  { to: "/students", label: "Students", icon: Users, roles: ["lecturer"], section: "Academic" },
+  { to: "/reports", label: "Reports", icon: BarChart3, roles: ["lecturer", "admin"], section: "Academic" },
+  
+  // ADMIN SECTION
+  { to: "/admin", label: "Admin Console", icon: ShieldCheck, roles: ["admin"], section: "Management" },
+  { to: "/courses", label: "Academic Catalog", icon: BookOpen, roles: ["admin"], section: "Management" },
+  { to: "/students", label: "User Management", icon: Users, roles: ["admin"], section: "Management" },
 
-  { to: "/timetable", label: "Timetable", icon: Calendar, roles: ["student", "lecturer", "admin"] },
-  { to: "/profile", label: "Profile", icon: UserIcon, roles: ["student", "lecturer", "admin"] },
-
-  { to: "/admin", label: "Admin Panel", icon: ShieldCheck, roles: ["admin"] },
+  // SYSTEM SECTION
+  { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, roles: ["student", "lecturer", "admin"], section: "System" },
+  { to: "/notifications", label: "Notifications", icon: Bell, roles: ["student", "lecturer", "admin"], section: "System" },
+  { to: "/profile", label: "My Profile", icon: UserIcon, roles: ["student", "lecturer", "admin"], section: "System" },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -49,8 +58,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const filteredItems = navItems.filter((i) => i.roles.includes(user.role as Role));
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/auth");
+    try {
+      await logout();
+      toast.success("Signed out successfully");
+      navigate("/auth");
+    } catch (err) {
+      toast.error("Failed to sign out");
+    }
   };
 
   const SidebarContent = (
@@ -67,25 +81,46 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1.5 px-4 py-4 overflow-y-auto custom-scrollbar">
-        {filteredItems.map((item) => {
-          const isActive = location.pathname === item.to || (item.to === "/admin" && location.pathname.startsWith("/admin"));
+      <nav className="flex-1 space-y-6 px-4 py-6 overflow-y-auto custom-scrollbar">
+        {["Main", "Academic", "Management", "System"].map((section) => {
+          const items = filteredItems.filter(i => i.section === section);
+          if (items.length === 0) return null;
+          
           return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className={cn(
-                "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className={cn("h-5 w-5 transition-colors", isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-primary")} />
-              <span className="flex-1 truncate">{item.label}</span>
-              {isActive && <ChevronRight className="h-4 w-4 animate-in fade-in slide-in-from-left-2" />}
-            </NavLink>
+            <div key={section} className="space-y-1.5">
+              <h4 className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-2">
+                {section}
+              </h4>
+              {items.map((item) => {
+                const isActive = location.pathname === item.to || (item.to === "/admin" && location.pathname.startsWith("/admin"));
+                const isManagement = section === "Management";
+                
+                return (
+                  <NavLink
+                    key={`${item.to}-${item.label}`}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300",
+                      isActive
+                        ? isManagement 
+                          ? "bg-purple-600 text-white shadow-lg shadow-purple-500/25"
+                          : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "h-5 w-5 transition-colors duration-300", 
+                      isActive 
+                        ? "text-white" 
+                        : cn("text-muted-foreground", isManagement ? "group-hover:text-purple-500" : "group-hover:text-primary")
+                    )} />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {isActive && <ChevronRight className="h-4 w-4 animate-in fade-in slide-in-from-left-2" />}
+                  </NavLink>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
@@ -94,12 +129,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-3 px-2 py-3">
           <Avatar className="h-10 w-10 border-2 border-primary/10">
             <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold font-display uppercase">
-              {user.name.substring(0, 2)}
+              {(user?.name || "User").substring(0, 2)}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-bold text-foreground leading-none">{user.name}</p>
-            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{user.role}</p>
+            <p className="truncate text-sm font-bold text-foreground leading-none">{user?.name || "User"}</p>
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{user?.role || "Guest"}</p>
           </div>
           <TooltipProvider>
             <Tooltip>
