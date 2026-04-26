@@ -266,10 +266,10 @@ export default function AdminUsers() {
 
       {/* Totals */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Lecturers" value={lecturers.length} icon={GraduationCap} color="text-blue-500" bgColor="bg-blue-500/10" desc="Teaching staff" />
-        <StatCard title="Students" value={allStudents.length} icon={Users} color="text-emerald-500" bgColor="bg-emerald-500/10" desc="Enrolled" />
-        <StatCard title="Courses" value={courses.length} icon={BookOpen} color="text-primary" bgColor="bg-primary/10" desc="In catalog" />
-        <StatCard title="Departments" value={departments.length} icon={Building2} color="text-purple-500" bgColor="bg-purple-500/10" desc="Active" />
+        <StatCard title="Lecturers" value={lecturers.length} icon={GraduationCap} color="text-primary" bgColor="bg-primary/10" desc="Teaching staff" />
+        <StatCard title="Students" value={allStudents.length} icon={Users} color="text-primary" bgColor="bg-primary/10" desc="Enrolled" />
+        <StatCard title="Courses" value={courses.length} icon={BookOpen} color="text-black" bgColor="bg-black/10" desc="In catalog" />
+        <StatCard title="Departments" value={departments.length} icon={Building2} color="text-primary" bgColor="bg-primary/10" desc="Active" />
       </div>
 
       <Tabs defaultValue="lecturers" className="space-y-6" onValueChange={setActiveTab}>
@@ -312,7 +312,7 @@ export default function AdminUsers() {
                   <tr key={l.user_id} className="group hover:bg-muted/20 transition-colors">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
-                        <Avatar className="h-11 w-11 border-2 border-border/40"><AvatarFallback className="bg-blue-500/10 text-blue-600 font-black text-xs uppercase">{l.name.substring(0, 2)}</AvatarFallback></Avatar>
+                        <Avatar className="h-11 w-11 border-2 border-border/40"><AvatarFallback className="bg-primary/10 text-primary font-black text-xs uppercase">{l.name.substring(0, 2)}</AvatarFallback></Avatar>
                         <div>
                           <p className="font-bold text-foreground leading-none">{l.name}</p>
                           <p className="text-xs text-muted-foreground mt-1">{l.email}</p>
@@ -350,7 +350,7 @@ export default function AdminUsers() {
                   <tr key={s.key} className="group hover:bg-muted/20 transition-colors">
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-4">
-                        <Avatar className="h-11 w-11 border-2 border-border/40"><AvatarFallback className="bg-emerald-500/10 text-emerald-600 font-black text-xs uppercase">{s.name.substring(0, 2)}</AvatarFallback></Avatar>
+                        <Avatar className="h-11 w-11 border-2 border-border/40"><AvatarFallback className="bg-primary/10 text-primary font-black text-xs uppercase">{s.name.substring(0, 2)}</AvatarFallback></Avatar>
                         <div>
                           <p className="font-bold text-foreground leading-none">{s.name}</p>
                           {s.email && <p className="text-xs text-muted-foreground mt-1">{s.email}</p>}
@@ -434,13 +434,13 @@ export default function AdminUsers() {
                     </div>
                   )}
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/10">
-                      <Building2 className="h-6 w-6 text-purple-500" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                      <Building2 className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-display text-lg font-black tracking-tight text-foreground leading-tight">{d.name}</h3>
-                        {d.isOfficial && <CheckCircle2 className="h-3.5 w-3.5 text-purple-500" />}
+                        {d.isOfficial && <CheckCircle2 className="h-3.5 w-3.5 text-primary" />}
                       </div>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
                         {d.isOfficial ? "Official System Dept" : "Ad-hoc (from records)"}
@@ -448,9 +448,9 @@ export default function AdminUsers() {
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <DeptStat icon={GraduationCap} label="Lecturers" value={d.lecturers} color="text-blue-500" />
-                    <DeptStat icon={Users} label="Students" value={d.students} color="text-emerald-500" />
-                    <DeptStat icon={BookOpen} label="Courses" value={d.courses} color="text-primary" />
+                    <DeptStat icon={GraduationCap} label="Lecturers" value={d.lecturers} color="text-primary" />
+                    <DeptStat icon={Users} label="Students" value={d.students} color="text-primary" />
+                    <DeptStat icon={BookOpen} label="Courses" value={d.courses} color="text-black" />
                   </div>
                 </div>
               ))}

@@ -3,46 +3,38 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/lib/mock-data";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GraduationCap, Loader2, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, Loader2, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 const signUpSchema = z.object({
-  name: z.string().trim().min(1, "Name required").max(100),
-  email: z.string().trim().email("Invalid email").max(255),
-  password: z.string().min(6, "Min 6 characters").max(72),
-  role: z.enum(["student", "lecturer"]),
+  name:       z.string().trim().min(1, "Name required").max(100),
+  email:      z.string().trim().email("Invalid email").max(255),
+  password:   z.string().min(6, "Min 6 characters").max(72),
+  role:       z.enum(["student", "lecturer"]),
   department: z.string().trim().min(1, "Department required").max(100),
-  level: z.string().min(1, "Level required"),
-  matric_no: z.string().trim().max(50).optional(),
+  level:      z.string().min(1, "Level required"),
+  matric_no:  z.string().trim().max(50).optional(),
 });
 
 const signInSchema = z.object({
-  email: z.string().trim().email("Invalid email").max(255),
+  email:    z.string().trim().email("Invalid email").max(255),
   password: z.string().min(1, "Password required").max(72),
 });
-
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [tab, setTab]               = useState<"signin" | "signup">("signin");
+  const [showPass, setShowPass]     = useState(false);
 
   const [signInData, setSignInData] = useState({ email: "", password: "" });
   const [signUpData, setSignUpData] = useState({
-    name: "",
-    email: "",
-    password: "",
+    name: "", email: "", password: "",
     role: "student" as Role,
-    department: "",
-    level: "100",
-    matric_no: "",
+    department: "", level: "100", matric_no: "",
   });
-
 
   useEffect(() => {
     if (!loading && user) navigate("/dashboard", { replace: true });
@@ -51,179 +43,302 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = signInSchema.safeParse(signInData);
-    if (!parsed.success) {
-      toast.error(parsed.error.errors[0].message);
-      return;
-    }
+    if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
     setSubmitting(true);
     const { error } = await signIn(parsed.data.email, parsed.data.password);
     setSubmitting(false);
-    if (error) toast.error(error);
-    else toast.success("Welcome back");
+    if (error) toast.error(error); else toast.success("Welcome back");
   };
-
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = signUpSchema.safeParse(signUpData);
-    if (!parsed.success) {
-      toast.error(parsed.error.errors[0].message);
-      return;
-    }
+    if (!parsed.success) { toast.error(parsed.error.errors[0].message); return; }
     setSubmitting(true);
     const { error } = await signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      name: parsed.data.name,
-      role: parsed.data.role,
-      department: parsed.data.department,
-      level: parsed.data.level,
+      email: parsed.data.email, password: parsed.data.password,
+      name: parsed.data.name, role: parsed.data.role,
+      department: parsed.data.department, level: parsed.data.level,
       matricNo: parsed.data.matric_no,
     });
-    if (error) {
-      setSubmitting(false);
-      toast.error(error);
-      return;
-    }
-    // If email confirmation is on, no session is returned. Sign the user in immediately.
+    if (error) { setSubmitting(false); toast.error(error); return; }
     const { error: siErr } = await signIn(parsed.data.email, parsed.data.password);
     setSubmitting(false);
-    if (siErr) {
-      toast.success("Account created! Please sign in.");
-    } else {
-      toast.success("Welcome to Attendly!");
-    }
+    if (siErr) toast.success("Account created! Please sign in.");
+    else toast.success("Welcome to Attendly!");
   };
 
-
   return (
-    <div className="relative min-h-screen overflow-hidden gradient-mesh flex items-center justify-center px-4 py-10">
-      {/* Decorative Elements */}
-      <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-float" />
-      <div className="pointer-events-none absolute -right-24 bottom-20 h-72 w-72 rounded-full bg-accent/20 blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+    <div style={{
+      minHeight: "100vh",
+      backgroundColor: "#f2f2ed",   // matches landing page exactly
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "24px 16px",
+      fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
+      {/* ── card ────────────────────────────────────────────────────────────── */}
+      <div style={{
+        width: "100%", maxWidth: 900,
+        borderRadius: 24,
+        display: "grid", gridTemplateColumns: "2fr 3fr",
+        overflow: "hidden",
+        boxShadow: "0 24px 60px rgba(0,0,0,0.12)",
+        minHeight: 540,
+      }} className="auth-card">
 
-      <div className="relative w-full max-w-md">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-primary shadow-glow animate-float">
-            <GraduationCap className="h-8 w-8 text-white" />
+        {/* ── LEFT PANEL ──────────────────────────────────────────────────── */}
+        <div style={{
+          position: "relative", overflow: "hidden",
+          backgroundColor: "#f2f2ed",
+          display: "flex", flexDirection: "column",
+          padding: "28px 28px 32px",
+        }} className="auth-left">
+
+          {/* teal glow blob */}
+          <div aria-hidden style={{
+            position: "absolute", top: -60, right: -60,
+            width: 280, height: 280, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(0,200,168,0.2) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }} />
+          {/* bottom soft blob */}
+          <div aria-hidden style={{
+            position: "absolute", bottom: -40, left: -40,
+            width: 220, height: 220, borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(0,200,168,0.12) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }} />
+
+          {/* Logo */}
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
+            <GraduationCap size={20} color="#0a0a0a" />
+            <span style={{ fontSize: 16, fontWeight: 800, color: "#0a0a0a", letterSpacing: "-0.3px" }}>
+              Attendly
+            </span>
           </div>
-          <div className="text-center">
-            <h1 className="font-display text-4xl font-black tracking-tighter text-foreground">Attendly</h1>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary/70">Electronic Attendance</p>
+
+          {/* Back to website */}
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              position: "absolute", top: 28, right: 28,
+              background: "rgba(10,10,10,0.06)", border: "1px solid rgba(10,10,10,0.1)",
+              borderRadius: 999, padding: "6px 14px",
+              fontSize: 12, fontWeight: 600, color: "#0a0a0a",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+            }}
+          >
+            Back to website <ArrowRight size={12} />
+          </button>
+
+          {/* Tagline */}
+          <div style={{ position: "relative", marginTop: "auto" }}>
+            <p style={{
+              margin: 0,
+              fontFamily: "'Space Grotesk', system-ui",
+              fontSize: 22, fontWeight: 800, lineHeight: 1.25,
+              color: "#0a0a0a", letterSpacing: "-0.4px",
+            }}>
+              Track Attendance,<br />
+              <span style={{ color: "#00c8a8" }}>Build Integrity.</span>
+            </p>
+
+            {/* Dots */}
+            <div style={{ display: "flex", gap: 6, marginTop: 20 }}>
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{
+                  height: 3, borderRadius: 999,
+                  width: i === 2 ? 24 : 16,
+                  background: i === 2 ? "#0a0a0a" : "rgba(10,10,10,0.2)",
+                }} />
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-1 shadow-elevated backdrop-blur-3xl lg:p-2">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-transparent p-1">
-              <TabsTrigger value="signin" className="rounded-2xl py-3 text-sm font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Sign In
-              </TabsTrigger>
-              <TabsTrigger value="signup" className="rounded-2xl py-3 text-sm font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                Create Account
-              </TabsTrigger>
-            </TabsList>
+        {/* ── RIGHT PANEL ─────────────────────────────────────────────────── */}
+        <div style={{
+          backgroundColor: "#ffffff",
+          padding: "44px 48px",
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          overflowY: "auto",
+        }}>
 
-            <div className="px-6 pb-8 pt-4 sm:px-8">
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="si-email">Email Address</Label>
-                    <Input id="si-email" type="email" placeholder="john@example.com" value={signInData.email}
-                      onChange={(e) => setSignInData({ ...signInData, email: e.target.value })} className="h-14 rounded-2xl bg-background/50 pl-6 font-bold" />
-                  </div>
+          {tab === "signup" ? (
+            <>
+              <h2 style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 700, color: "#0a0a0a", letterSpacing: "-0.5px" }}>
+                Create an account
+              </h2>
+              <p style={{ margin: "0 0 28px", fontSize: 13, color: "#6b6b6b" }}>
+                Already have an account?{" "}
+                <button onClick={() => setTab("signin")} style={{ background: "none", border: "none", cursor: "pointer", color: "#0a0a0a", fontWeight: 700, fontSize: 13, padding: 0, textDecoration: "underline" }}>
+                  Log in
+                </button>
+              </p>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="si-password">Secret Password</Label>
-                    <Input id="si-password" type="password" placeholder="••••••••" value={signInData.password}
-                      onChange={(e) => setSignInData({ ...signInData, password: e.target.value })} className="h-14 rounded-2xl bg-background/50 pl-6" />
-                  </div>
-                  <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl gradient-primary text-base font-bold shadow-glow transition-all active:scale-95 mt-2">
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Welcome Back"}
-                  </Button>
-                </form>
-              </TabsContent>
+              <form onSubmit={handleSignUp} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <LightInput placeholder="Full name" value={signUpData.name}
+                    onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })} />
+                  <Select value={signUpData.role} onValueChange={(v) => setSignUpData({ ...signUpData, role: v as Role })}>
+                    <SelectTrigger style={selStyle}>
+                      <SelectValue placeholder="I am a..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="lecturer">Lecturer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-name">Full Name</Label>
-                      <Input id="su-name" placeholder="John Doe" value={signUpData.name}
-                        onChange={(e) => setSignUpData({ ...signUpData, name: e.target.value })} className="rounded-xl bg-background/50" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-role">I am a...</Label>
-                      <Select value={signUpData.role} onValueChange={(v) => setSignUpData({ ...signUpData, role: v as Role })}>
-                        <SelectTrigger id="su-role" className="rounded-xl bg-background/50">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="student">Student</SelectItem>
-                          <SelectItem value="lecturer">Lecturer</SelectItem>
-                        </SelectContent>
-                        {/* Admin accounts are created by an existing admin from the Admin panel. */}
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="su-password">Create Password</Label>
-                    <Input id="su-password" type="password" placeholder="Min 6 characters" value={signUpData.password}
-                      onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })} className="rounded-xl bg-background/50" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-dept">Department</Label>
-                      <Input id="su-dept" placeholder="Computer Science" value={signUpData.department}
-                        onChange={(e) => setSignUpData({ ...signUpData, department: e.target.value })} className="rounded-xl bg-background/50" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="su-email">Work Email</Label>
-                      <Input id="su-email" type="email" placeholder="john@example.com" value={signUpData.email}
-                        onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} className="rounded-xl bg-background/50" />
-                    </div>
-                  </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <LightInput type="email" placeholder="Email" value={signUpData.email}
+                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} />
+                  <LightInput placeholder="Department" value={signUpData.department}
+                    onChange={(e) => setSignUpData({ ...signUpData, department: e.target.value })} />
+                </div>
 
-                  {signUpData.role === "student" && (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="su-matric">Matric Number</Label>
-                        <Input id="su-matric" placeholder="CSC/2021/045" value={signUpData.matric_no}
-                          onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} className="rounded-xl bg-background/50" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="su-level">Level</Label>
-                        <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
-                          <SelectTrigger id="su-level" className="rounded-xl bg-background/50">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="100">100</SelectItem>
-                            <SelectItem value="200">200</SelectItem>
-                            <SelectItem value="300">300</SelectItem>
-                            <SelectItem value="400">400</SelectItem>
-                            <SelectItem value="500">500</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
+                <div style={{ position: "relative" }}>
+                  <LightInput
+                    type={showPass ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={signUpData.password}
+                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    style={{ paddingRight: 44 }}
+                  />
+                  <button type="button" onClick={() => setShowPass(!showPass)}
+                    style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex" }}>
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
 
-                  <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl gradient-primary text-base font-bold shadow-glow transition-all active:scale-95 mt-4">
-                    {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Get Started"}
-                  </Button>
-                  <div className="flex items-center justify-center gap-1.5 pt-4 opacity-60">
-                    <ShieldCheck className="h-3 w-3" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest">
-                      Developer Testing Mode
-                    </p>
+                {signUpData.role === "student" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <LightInput placeholder="Matric no. (CSC/21/045)" value={signUpData.matric_no}
+                      onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} />
+                    <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
+                      <SelectTrigger style={selStyle}>
+                        <SelectValue placeholder="Level" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["100","200","300","400","500"].map(l => (
+                          <SelectItem key={l} value={l}>{l} Level</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </form>
-              </TabsContent>
-            </div>
-          </Tabs>
+                )}
+
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginTop: 2 }}>
+                  <input type="checkbox" required style={{ width: 15, height: 15, accentColor: "#0a0a0a", cursor: "pointer" }} />
+                  <span style={{ fontSize: 12, color: "#6b6b6b" }}>
+                    I agree to the{" "}
+                    <a href="#" style={{ color: "#0a0a0a", textDecoration: "underline", fontWeight: 600 }}>Terms &amp; Conditions</a>
+                  </span>
+                </label>
+
+                <BlackBtn type="submit" disabled={submitting}>
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : "Create account"}
+                </BlackBtn>
+              </form>
+            </>
+          ) : (
+            <>
+              <h2 style={{ margin: "0 0 6px", fontSize: 28, fontWeight: 700, color: "#0a0a0a", letterSpacing: "-0.5px" }}>
+                Welcome back
+              </h2>
+              <p style={{ margin: "0 0 28px", fontSize: 13, color: "#6b6b6b" }}>
+                Don't have an account?{" "}
+                <button onClick={() => setTab("signup")} style={{ background: "none", border: "none", cursor: "pointer", color: "#0a0a0a", fontWeight: 700, fontSize: 13, padding: 0, textDecoration: "underline" }}>
+                  Sign up
+                </button>
+              </p>
+
+              <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <LightInput type="email" placeholder="Email" value={signInData.email}
+                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })} />
+
+                <div style={{ position: "relative" }}>
+                  <LightInput
+                    type={showPass ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={signInData.password}
+                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    style={{ paddingRight: 44 }}
+                  />
+                  <button type="button" onClick={() => setShowPass(!showPass)}
+                    style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#aaa", display: "flex" }}>
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+
+                <BlackBtn type="submit" disabled={submitting}>
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : "Log in"}
+                </BlackBtn>
+              </form>
+            </>
+          )}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .auth-card { grid-template-columns: 1fr !important; }
+          .auth-left { display: none !important; }
+        }
+
+        /* Override shadcn SelectItem highlight from pink → teal */
+        [role="option"]:focus,
+        [role="option"][data-highlighted] {
+          background-color: #e6faf6 !important;
+          color: #00875a !important;
+          outline: none;
+        }
+      `}</style>
     </div>
+  );
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function LightInput({ style, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      {...props}
+      style={{
+        width: "100%", height: 44, borderRadius: 10,
+        background: "#f8f8f4", border: "1px solid #e4e4e4",
+        color: "#0a0a0a", fontSize: 13, padding: "0 14px",
+        outline: "none", boxSizing: "border-box",
+        fontFamily: "inherit",
+        ...style,
+      }}
+      onFocus={e => (e.currentTarget.style.borderColor = "#0a0a0a")}
+      onBlur={e  => (e.currentTarget.style.borderColor = "#e4e4e4")}
+    />
+  );
+}
+
+const selStyle: React.CSSProperties = {
+  height: 44, borderRadius: 10,
+  background: "#f8f8f4", border: "1px solid #e4e4e4",
+  fontSize: 13, color: "#0a0a0a",
+};
+
+function BlackBtn({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...props}
+      style={{
+        marginTop: 6, width: "100%", height: 46,
+        background: props.disabled ? "#555" : "#0a0a0a",
+        color: "#fff", border: "none", borderRadius: 10,
+        fontSize: 14, fontWeight: 700,
+        cursor: props.disabled ? "not-allowed" : "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        transition: "opacity 0.15s", letterSpacing: "-0.1px",
+      }}
+    >
+      {children}
+    </button>
   );
 }
