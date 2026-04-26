@@ -104,11 +104,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       "group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-300",
                       isActive
                         ? isManagement 
-<<<<<<< HEAD
-                          ? "bg-purple-600 text-white shadow-lg shadow-purple-500/25"
-=======
                           ? "bg-black text-white shadow-lg shadow-black/25"
->>>>>>> 915861f (Update Dashboard UI to match brand aesthetic)
                           : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
@@ -117,11 +113,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       "h-5 w-5 transition-colors duration-300", 
                       isActive 
                         ? "text-white" 
-<<<<<<< HEAD
-                        : cn("text-muted-foreground", isManagement ? "group-hover:text-purple-500" : "group-hover:text-primary")
-=======
                         : cn("text-muted-foreground", isManagement ? "group-hover:text-black" : "group-hover:text-primary")
->>>>>>> 915861f (Update Dashboard UI to match brand aesthetic)
                     )} />
                     <span className="flex-1 truncate">{item.label}</span>
                     {isActive && <ChevronRight className="h-4 w-4 animate-in fade-in slide-in-from-left-2" />}
@@ -160,9 +152,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   );
 
   return (
-<<<<<<< HEAD
-    <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10">
-=======
     <div className="flex min-h-screen bg-background font-sans selection:bg-primary/10 relative">
       {/* Decorative Brand Blobs */}
       <div
@@ -180,7 +169,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         }}
       />
 
->>>>>>> 915861f (Update Dashboard UI to match brand aesthetic)
       <Onboarding />
       {/* Mobile Header */}
 
