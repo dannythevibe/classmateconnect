@@ -23,6 +23,9 @@ import NewLecturerDialog from "@/components/dialogs/NewLecturerDialog";
 import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
 import NewCourseDialog from "@/components/dialogs/NewCourseDialog";
 import NewDepartmentDialog from "@/components/dialogs/NewDepartmentDialog";
+import BulkCourseUploadDialog from "@/components/dialogs/BulkCourseUploadDialog";
+import NotifyShortageDialog from "@/components/dialogs/NotifyShortageDialog";
+import CourseReportDialog from "@/components/dialogs/CourseReportDialog";
 
 type Role = "student" | "lecturer" | "admin";
 
@@ -51,6 +54,8 @@ interface CourseRow {
   level: string | null;
   room: string;
   schedule: string;
+  session: string | null;
+  semester: string | null;
   lecturer_id: string;
   lecturer_name?: string;
 }
@@ -86,7 +91,7 @@ async function fetchStudents(): Promise<StudentRow[]> {
 async function fetchCourses(): Promise<CourseRow[]> {
   const { data: courses, error } = await supabase
     .from("courses")
-    .select("id, code, title, department, level, room, schedule, lecturer_id")
+    .select("id, code, title, department, level, room, schedule, session, semester, lecturer_id")
     .order("created_at", { ascending: false });
   if (error) throw error;
   const ids = Array.from(new Set((courses ?? []).map((c: any) => c.lecturer_id).filter(Boolean)));
@@ -256,8 +261,11 @@ export default function AdminUsers() {
               <NewLecturerDialog />
               <NewStudentDialog />
               <NewCourseDialog />
+              <BulkCourseUploadDialog />
             </>
           )}
+          <CourseReportDialog />
+          <NotifyShortageDialog />
           <Button variant="outline" className="h-12 rounded-2xl border-border/40 font-bold px-6 shadow-soft hover:bg-muted" onClick={() => qc.invalidateQueries()}>
             <RefreshCw className="mr-2 h-4 w-4" /> Sync
           </Button>
@@ -393,7 +401,7 @@ export default function AdminUsers() {
           >
             <table className="w-full text-left">
               <thead><tr className="bg-muted/30 border-b border-border/40">
-                <Th>Course</Th><Th>Lecturer</Th><Th>Department</Th><Th>Level</Th><Th>Schedule</Th><Th className="text-right">Action</Th>
+                <Th>Course</Th><Th>Lecturer</Th><Th>Department</Th><Th>Level</Th><Th>Session</Th><Th>Semester</Th><Th>Schedule</Th><Th className="text-right">Action</Th>
               </tr></thead>
               <tbody className="divide-y divide-border/20">
                 {filteredCourses.map(c => (
@@ -405,6 +413,8 @@ export default function AdminUsers() {
                     <td className="px-8 py-5 text-sm font-bold">{c.lecturer_name}</td>
                     <td className="px-8 py-5"><Badge variant="secondary" className="rounded-full font-bold">{c.department || "—"}</Badge></td>
                     <td className="px-8 py-5"><Badge variant="outline" className="rounded-full">{c.level || "—"}</Badge></td>
+                    <td className="px-8 py-5 text-xs font-bold">{c.session || "—"}</td>
+                    <td className="px-8 py-5 text-xs font-bold">{c.semester || "—"}</td>
                     <td className="px-8 py-5 text-xs text-muted-foreground font-medium">{c.schedule || "—"} {c.room && <span className="opacity-60">· {c.room}</span>}</td>
                     <td className="px-8 py-5 text-right">
                       <DeleteBtn disabled={busyId === c.id} onConfirm={() => deleteCourse(c.id)} name={c.code} />

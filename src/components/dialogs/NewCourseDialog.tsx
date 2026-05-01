@@ -28,6 +28,8 @@ const schema = z.object({
   room: z.string().trim().max(60).optional(),
   level: z.string().min(1, "Level required"),
   department: z.string().trim().min(1, "Department required"),
+  session: z.string().trim().max(20).optional(),
+  semester: z.string().trim().max(20).optional(),
   lecturer_id: z.string().uuid("Pick a lecturer"),
 });
 
@@ -59,6 +61,8 @@ export default function NewCourseDialog() {
     room: "",
     level: "100",
     department: user?.department || "",
+    session: "",
+    semester: "1st",
     lecturer_id: user?.id || "",
   });
 
@@ -88,6 +92,8 @@ export default function NewCourseDialog() {
         room: parsed.data.room ?? "",
         level: parsed.data.level,
         department: parsed.data.department,
+        session: parsed.data.session ?? "",
+        semester: parsed.data.semester ?? "",
         color,
         lecturer_id: parsed.data.lecturer_id,
       });
@@ -97,7 +103,7 @@ export default function NewCourseDialog() {
       toast.success("Course created");
       qc.invalidateQueries({ queryKey: ["courses"] });
       setOpen(false);
-      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", lecturer_id: user?.id || "" });
+      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", session: "", semester: "1st", lecturer_id: user?.id || "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -179,6 +185,23 @@ export default function NewCourseDialog() {
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Venue / Room</Label>
               <Input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} placeholder="LH-3" className="h-12 rounded-2xl bg-muted/20" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Session</Label>
+              <Input value={form.session} onChange={(e) => setForm({ ...form, session: e.target.value })} placeholder="2025/2026" className="h-12 rounded-2xl bg-muted/20" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Semester</Label>
+              <Select value={form.semester} onValueChange={(v) => setForm({ ...form, semester: v })}>
+                <SelectTrigger className="h-12 rounded-2xl bg-muted/20"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="1st">1st Semester</SelectItem>
+                  <SelectItem value="2nd">2nd Semester</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
