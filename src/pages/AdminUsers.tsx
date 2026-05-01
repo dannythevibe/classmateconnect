@@ -23,6 +23,9 @@ import NewLecturerDialog from "@/components/dialogs/NewLecturerDialog";
 import NewStudentDialog from "@/components/dialogs/NewStudentDialog";
 import NewCourseDialog from "@/components/dialogs/NewCourseDialog";
 import NewDepartmentDialog from "@/components/dialogs/NewDepartmentDialog";
+import BulkCourseUploadDialog from "@/components/dialogs/BulkCourseUploadDialog";
+import NotifyShortageDialog from "@/components/dialogs/NotifyShortageDialog";
+import CourseReportDialog from "@/components/dialogs/CourseReportDialog";
 
 type Role = "student" | "lecturer" | "admin";
 
@@ -256,8 +259,11 @@ export default function AdminUsers() {
               <NewLecturerDialog />
               <NewStudentDialog />
               <NewCourseDialog />
+              <BulkCourseUploadDialog />
             </>
           )}
+          <CourseReportDialog />
+          <NotifyShortageDialog />
           <Button variant="outline" className="h-12 rounded-2xl border-border/40 font-bold px-6 shadow-soft hover:bg-muted" onClick={() => qc.invalidateQueries()}>
             <RefreshCw className="mr-2 h-4 w-4" /> Sync
           </Button>
