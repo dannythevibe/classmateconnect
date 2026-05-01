@@ -425,7 +425,7 @@ function LecturerView() {
 function StudentView() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const { data: myStudent } = useQuery({ queryKey: ["my-student", user?.matricNo], queryFn: () => fetchMyStudentRow(user?.matricNo), enabled: !!user });
+  const { data: myStudent } = useQuery({ queryKey: ["my-student", user?.matric_no], queryFn: () => fetchMyStudentRow(user?.matric_no), enabled: !!user });
   const { data: history = [] } = useQuery({
     queryKey: ["my-attendance", myStudent?.id],
     queryFn: async () => {

@@ -29,6 +29,9 @@ const schema = z.object({
   level: z.string().min(1, "Level required"),
   department: z.string().trim().min(1, "Department required"),
   lecturer_id: z.string().uuid("Pick a lecturer"),
+  session: z.string().min(1, "Session required"),
+  semester: z.string().min(1, "Semester required"),
+  faculty: z.string().trim().min(1, "Faculty required"),
 });
 
 async function fetchLecturers() {
@@ -60,6 +63,9 @@ export default function NewCourseDialog() {
     level: "100",
     department: user?.department || "",
     lecturer_id: user?.id || "",
+    session: "2023/2024",
+    semester: "First",
+    faculty: "",
   });
 
   const { data: lecturers = [] } = useQuery({
@@ -88,6 +94,9 @@ export default function NewCourseDialog() {
         room: parsed.data.room ?? "",
         level: parsed.data.level,
         department: parsed.data.department,
+        session: parsed.data.session,
+        semester: parsed.data.semester,
+        faculty: parsed.data.faculty,
         color,
         lecturer_id: parsed.data.lecturer_id,
       });
@@ -97,7 +106,7 @@ export default function NewCourseDialog() {
       toast.success("Course created");
       qc.invalidateQueries({ queryKey: ["courses"] });
       setOpen(false);
-      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", lecturer_id: user?.id || "" });
+      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", lecturer_id: user?.id || "", session: "2023/2024", semester: "First", faculty: "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -170,6 +179,38 @@ export default function NewCourseDialog() {
               </Select>
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Session</Label>
+              <Select value={form.session} onValueChange={(v) => setForm({ ...form, session: v })}>
+                <SelectTrigger className="h-12 rounded-2xl bg-muted/20">
+                  <SelectValue placeholder="Select Session" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="2023/2024">2023/2024</SelectItem>
+                  <SelectItem value="2024/2025">2024/2025</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Semester</Label>
+              <Select value={form.semester} onValueChange={(v) => setForm({ ...form, semester: v })}>
+                <SelectTrigger className="h-12 rounded-2xl bg-muted/20">
+                  <SelectValue placeholder="Select Semester" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="First">First Semester</SelectItem>
+                  <SelectItem value="Second">Second Semester</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Faculty</Label>
+            <Input value={form.faculty} onChange={(e) => setForm({ ...form, faculty: e.target.value })} placeholder="e.g. Science" className="h-12 rounded-2xl bg-muted/20" />
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

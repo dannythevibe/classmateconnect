@@ -38,8 +38,8 @@ const navItems: NavItem[] = [
   
   // ADMIN SECTION
   { to: "/admin", label: "Admin Console", icon: ShieldCheck, roles: ["admin"], section: "Management" },
+  { to: "/admin/users", label: "User Management", icon: Users, roles: ["admin"], section: "Management" },
   { to: "/courses", label: "Academic Catalog", icon: BookOpen, roles: ["admin"], section: "Management" },
-  { to: "/students", label: "User Management", icon: Users, roles: ["admin"], section: "Management" },
 
   // SYSTEM SECTION
   { to: "/ai-assistant", label: "AI Assistant", icon: Sparkles, roles: ["student", "lecturer", "admin"], section: "System" },
@@ -134,7 +134,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Avatar>
           <div className="flex-1 overflow-hidden">
             <p className="truncate text-sm font-bold text-foreground leading-none">{user?.name || "User"}</p>
-            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{user?.role || "Guest"}</p>
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-primary mt-1">
+              {user?.role === "admin" ? "System Administrator" : user?.role === "lecturer" ? "Faculty Lecturer" : `${user?.level || "100"} Level Student`}
+            </p>
           </div>
           <TooltipProvider>
             <Tooltip>

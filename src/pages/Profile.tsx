@@ -33,8 +33,12 @@ export default function Profile() {
             {user.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
           </div>
           <h3 className="mt-4 font-display text-lg font-bold">{user.name}</h3>
-          <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
-          {user.matricNo && <p className="mt-2 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold">{user.matricNo}</p>}
+          <p className="text-sm text-muted-foreground capitalize">
+            {user.role === "admin" ? "System Administrator" : user.role === "lecturer" ? "Faculty Lecturer" : `${user.role}`}
+          </p>
+          {user.role === "student" && user.matric_no && (
+            <p className="mt-2 inline-block rounded-full bg-muted px-3 py-1 text-xs font-semibold">{user.matric_no}</p>
+          )}
         </div>
 
         <form onSubmit={save} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
@@ -48,10 +52,12 @@ export default function Profile() {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5" />
             </div>
-            <div>
-              <Label htmlFor="dept">Department</Label>
-              <Input id="dept" value={department} onChange={(e) => setDepartment(e.target.value)} className="mt-1.5" />
-            </div>
+            {user.role !== "admin" && (
+              <div>
+                <Label htmlFor="dept">Department</Label>
+                <Input id="dept" value={department} onChange={(e) => setDepartment(e.target.value)} className="mt-1.5" />
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" className="gradient-primary"><Save className="mr-2 h-4 w-4" /> Save changes</Button>

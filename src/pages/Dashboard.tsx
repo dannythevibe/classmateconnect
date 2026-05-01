@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { StatCard } from "@/components/StatCard";
@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchCourses, fetchStudents, fetchAttendanceRates, fetchMyStudentRow, fetchStudentEnrollments, NotificationRow, AttendanceRecord } from "@/lib/queries";
 import { QrCode, Users, BookOpen, TrendingUp, Sparkles, AlertTriangle, CheckCircle2, Clock, Calendar, ChevronRight, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,10 @@ async function fetchLatestNotifications(userId: string): Promise<NotificationRow
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirects removed to stop auth loops. Dashboards are now accessed via sidebar.
+  if (!user) return null;
 
   const { data: courses = [] } = useQuery({ queryKey: ["courses"], queryFn: fetchCourses, enabled: !!user });
   const { data: students = [] } = useQuery({
@@ -70,8 +74,8 @@ export default function Dashboard() {
     enabled: !!user && user.role !== "student",
   });
   const { data: myStudent } = useQuery({
-    queryKey: ["my-student", user?.matricNo],
-    queryFn: () => fetchMyStudentRow(user?.matricNo),
+    queryKey: ["my-student", user?.matric_no],
+    queryFn: () => fetchMyStudentRow(user?.matric_no),
     enabled: !!user && user.role === "student",
   });
   const { data: myEnrollments = [] } = useQuery({

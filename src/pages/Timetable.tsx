@@ -13,8 +13,8 @@ export default function Timetable() {
   const { user } = useAuth();
   const { data: courses = [] } = useQuery({ queryKey: ["courses"], queryFn: fetchCourses });
   const { data: myStudent } = useQuery({
-    queryKey: ["my-student", user?.matricNo],
-    queryFn: () => fetchMyStudentRow(user?.matricNo),
+    queryKey: ["my-student", user?.matric_no],
+    queryFn: () => fetchMyStudentRow(user?.matric_no),
     enabled: !!user && user.role === "student",
   });
   const { data: myEnrollments = [] } = useQuery({

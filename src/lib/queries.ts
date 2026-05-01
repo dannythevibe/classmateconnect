@@ -136,7 +136,7 @@ export async function fetchAttendanceRates(courseIds: string[]): Promise<Record<
   (data ?? []).forEach((r: { course_id: string; status: string }) => {
     const t = (totals[r.course_id] = totals[r.course_id] ?? { p: 0, t: 0 });
     t.t += 1;
-    if (r.status === "present" || r.status === "late") t.p += 1;
+    if (r.status === "present" || r.status === "late" || r.status === "excused") t.p += 1;
   });
   const out: Record<string, number> = {};
   Object.entries(totals).forEach(([k, v]) => (out[k] = v.t === 0 ? 0 : Math.round((v.p / v.t) * 100)));
@@ -168,12 +168,12 @@ export async function fetchActiveSessionByToken(token: string): Promise<(Attenda
 }
 
 
-export async function fetchMyStudentRow(matricNo: string | undefined): Promise<Student | null> {
-  if (!matricNo) return null;
+export async function fetchMyStudentRow(matric_no: string | undefined): Promise<Student | null> {
+  if (!matric_no) return null;
   const { data, error } = await supabase
     .from("students")
     .select("*")
-    .eq("matric_no", matricNo)
+    .eq("matric_no", matric_no)
     .maybeSingle();
   if (error) throw error;
   return data as Student | null;

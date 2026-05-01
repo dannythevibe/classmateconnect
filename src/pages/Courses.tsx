@@ -20,8 +20,8 @@ export default function Courses() {
   const ids = useMemo(() => courses.map((c) => c.id), [courses]);
   
   const { data: myStudent } = useQuery({ 
-    queryKey: ["my-student", user?.matricNo], 
-    queryFn: () => fetchMyStudentRow(user?.matricNo), 
+    queryKey: ["my-student", user?.matric_no], 
+    queryFn: () => fetchMyStudentRow(user?.matric_no), 
     enabled: !!user && user.role === "student" 
   });
 
@@ -76,7 +76,7 @@ export default function Courses() {
       if (user?.role === "student") {
         if (filterMode === "fit") {
           const deptMatch = !c.department || c.department.toLowerCase() === user.department?.toLowerCase();
-          const levelMatch = !c.level || c.level === user.level || (user.matricNo && c.level === user.matricNo.substring(0, 1) + "00"); // Fallback for 100, 200 etc
+          const levelMatch = !c.level || c.level === user.level || (user.matric_no && c.level === user.matric_no.substring(0, 1) + "00"); // Fallback for 100, 200 etc
           return deptMatch && levelMatch;
         }
         if (filterMode === "enrolled") {

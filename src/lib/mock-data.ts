@@ -6,7 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
-  matricNo?: string;
+  matric_no?: string;
   department: string;
   level: string;
   avatar?: string;

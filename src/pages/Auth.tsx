@@ -59,7 +59,7 @@ export default function Auth() {
       email: parsed.data.email, password: parsed.data.password,
       name: parsed.data.name, role: parsed.data.role,
       department: parsed.data.department, level: parsed.data.level,
-      matricNo: parsed.data.matric_no,
+      matric_no: parsed.data.matric_no,
     });
     if (error) { setSubmitting(false); toast.error(error); return; }
     const { error: siErr } = await signIn(parsed.data.email, parsed.data.password);
