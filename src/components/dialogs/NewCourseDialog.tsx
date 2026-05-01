@@ -187,6 +187,23 @@ export default function NewCourseDialog() {
               <Input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} placeholder="LH-3" className="h-12 rounded-2xl bg-muted/20" />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Session</Label>
+              <Input value={form.session} onChange={(e) => setForm({ ...form, session: e.target.value })} placeholder="2025/2026" className="h-12 rounded-2xl bg-muted/20" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Semester</Label>
+              <Select value={form.semester} onValueChange={(v) => setForm({ ...form, semester: v })}>
+                <SelectTrigger className="h-12 rounded-2xl bg-muted/20"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="1st">1st Semester</SelectItem>
+                  <SelectItem value="2nd">2nd Semester</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
         <DialogFooter className="mt-8 gap-3 sm:justify-start">
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="h-12 flex-1 rounded-2xl gradient-primary font-bold shadow-glow text-base">
