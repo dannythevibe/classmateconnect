@@ -18,6 +18,8 @@ import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import Timetable from "./pages/Timetable";
 import AdminUsers from "./pages/AdminUsers";
+import AttendanceCalendar from "./pages/AttendanceCalendar";
+import LecturerCourseDetail from "./pages/LecturerCourseDetail";
 import NotFound from "./pages/NotFound";
 
 import SyncManager from "./components/SyncManager";
