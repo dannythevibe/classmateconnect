@@ -149,30 +149,6 @@ export type Database = {
           },
         ]
       }
-      departments: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       attendance_sessions: {
         Row: {
           course_id: string
@@ -229,11 +205,14 @@ export type Database = {
           color: string
           created_at: string
           department: string | null
+          faculty: string | null
           id: string
           lecturer_id: string
           level: string | null
           room: string
           schedule: string
+          semester: string | null
+          session: string | null
           title: string
           updated_at: string
         }
@@ -242,11 +221,14 @@ export type Database = {
           color?: string
           created_at?: string
           department?: string | null
+          faculty?: string | null
           id?: string
           lecturer_id: string
           level?: string | null
           room?: string
           schedule?: string
+          semester?: string | null
+          session?: string | null
           title: string
           updated_at?: string
         }
@@ -255,13 +237,40 @@ export type Database = {
           color?: string
           created_at?: string
           department?: string | null
+          faculty?: string | null
           id?: string
           lecturer_id?: string
           level?: string | null
           room?: string
           schedule?: string
+          semester?: string | null
+          session?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -336,6 +345,7 @@ export type Database = {
           created_at: string
           department: string | null
           email: string
+          faculty: string | null
           id: string
           level: string | null
           matric_no: string | null
@@ -347,6 +357,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string
+          faculty?: string | null
           id?: string
           level?: string | null
           matric_no?: string | null
@@ -358,6 +369,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string
+          faculty?: string | null
           id?: string
           level?: string | null
           matric_no?: string | null
@@ -372,6 +384,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           department: string
+          faculty: string | null
           id: string
           level: string
           matric_no: string
@@ -382,6 +395,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department?: string
+          faculty?: string | null
           id?: string
           level?: string
           matric_no: string
@@ -392,6 +406,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department?: string
+          faculty?: string | null
           id?: string
           level?: string
           matric_no?: string
@@ -423,7 +438,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      attendance_summary_report: {
+        Row: {
+          attendance_percentage: number | null
+          attended_count: number | null
+          classes_ended: string | null
+          classes_started: string | null
+          course_code: string | null
+          course_title: string | null
+          faculty: string | null
+          lecturer_name: string | null
+          matric_no: string | null
+          semester: string | null
+          session: string | null
+          student_name: string | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
