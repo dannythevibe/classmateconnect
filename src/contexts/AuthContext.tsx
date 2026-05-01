@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Role, User } from "@/lib/mock-data";
@@ -23,7 +23,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// Helper to wrap a promise in a timeout
 const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
   return Promise.race([
     promise,
@@ -33,7 +32,6 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 
 async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
   try {
-    // 1. Fetch Profile and Role with a 3-second timeout
     const fetchTask = Promise.all([
       supabase.from("profiles").select("*").eq("user_id", supaUser.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", supaUser.id).maybeSingle(),
@@ -45,7 +43,6 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
     let finalProfile = profile;
     let finalRole = roleRow?.role;
 
-    // 2. SELF-HEALING: Profile
     if (!finalProfile) {
       const meta = supaUser.user_metadata || {};
       const { data: newProfile } = await supabase.from("profiles").insert({
@@ -59,15 +56,12 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
       finalProfile = newProfile;
     }
 
-    // 3. SELF-HEALING: Role
     if (!finalRole) {
       const metaRole = (supaUser.user_metadata?.role as Role) || "student";
-      // Don't await this so we don't block the UI
       supabase.from("user_roles").insert({ user_id: supaUser.id, role: metaRole }).then();
       finalRole = metaRole;
     }
 
-    // 4. Determine Final Role
     let finalUserRole = (finalRole as Role) || "student";
     if (supaUser.email === "admin@attendly.edu") finalUserRole = "admin";
 
@@ -95,38 +89,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const loadingUserRef = useRef<string | null>(null);
+
+  const syncUser = async (s: Session | null) => {
+    if (!s?.user) {
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
+    // Prevent duplicate loading tasks for the same user
+    if (loadingUserRef.current === s.user.id) return;
+    loadingUserRef.current = s.user.id;
+    
+    setSession(s);
+    const u = await loadUser(s.user);
+    setUser(u);
+    setLoading(false);
+    loadingUserRef.current = null;
+  };
 
   useEffect(() => {
-    // Global loader timeout
     const forceTimer = setTimeout(() => setLoading(false), 5000);
 
-    const init = async () => {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      if (s?.user) {
-        setSession(s);
-        const u = await loadUser(s.user);
-        setUser(u);
-      }
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      syncUser(s);
       clearTimeout(forceTimer);
-    };
+    });
 
-    init();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, s) => {
-      if (s?.user) {
-        setSession(s);
-        const u = await loadUser(s.user);
-        setUser(u);
-      } else {
-        setUser(null);
-        setSession(null);
-      }
-      
-      // Stop loading on almost all events
-      if (event !== "PASSWORD_RECOVERY") {
-        setLoading(false);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      syncUser(s);
       clearTimeout(forceTimer);
     });
 
@@ -158,11 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: error.message };
       }
       
-      if (data.user) {
-        // Fast-track the user state
-        const u = await loadUser(data.user);
-        setUser(u);
-        setSession(data.session);
+      if (data.session) {
+        await syncUser(data.session);
       }
       
       setLoading(false);
@@ -178,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setSession(null);
     setLoading(false);
+    loadingUserRef.current = null;
   };
 
   const updateProfile = async (data: Partial<User>) => {
