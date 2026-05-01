@@ -28,6 +28,8 @@ const schema = z.object({
   room: z.string().trim().max(60).optional(),
   level: z.string().min(1, "Level required"),
   department: z.string().trim().min(1, "Department required"),
+  session: z.string().trim().max(20).optional(),
+  semester: z.string().trim().max(20).optional(),
   lecturer_id: z.string().uuid("Pick a lecturer"),
 });
 
@@ -59,6 +61,8 @@ export default function NewCourseDialog() {
     room: "",
     level: "100",
     department: user?.department || "",
+    session: "",
+    semester: "1st",
     lecturer_id: user?.id || "",
   });
 
@@ -88,6 +92,8 @@ export default function NewCourseDialog() {
         room: parsed.data.room ?? "",
         level: parsed.data.level,
         department: parsed.data.department,
+        session: parsed.data.session ?? "",
+        semester: parsed.data.semester ?? "",
         color,
         lecturer_id: parsed.data.lecturer_id,
       });
@@ -97,7 +103,7 @@ export default function NewCourseDialog() {
       toast.success("Course created");
       qc.invalidateQueries({ queryKey: ["courses"] });
       setOpen(false);
-      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", lecturer_id: user?.id || "" });
+      setForm({ code: "", title: "", schedule: "", room: "", level: "100", department: user?.department || "", session: "", semester: "1st", lecturer_id: user?.id || "" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
