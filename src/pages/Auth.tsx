@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/lib/mock-data";
-import { GraduationCap, Loader2, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { GraduationCap, Loader2, Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const signUpSchema = z.object({
@@ -66,6 +67,23 @@ export default function Auth() {
     setSubmitting(false);
     if (siErr) toast.success("Account created! Please sign in.");
     else toast.success("Welcome to Attendly!");
+  };
+
+  const handleDemo = async (role: "admin" | "lecturer" | "student") => {
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-demo", { body: { role } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Demo seed failed");
+      const { email, password } = data.credentials;
+      const { error: siErr } = await signIn(email, password);
+      if (siErr) throw new Error(siErr);
+      toast.success(`Logged in as demo ${role}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -214,7 +232,7 @@ export default function Auth() {
 
                 {signUpData.role === "student" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <LightInput placeholder="Matric no. (CSC/21/045)" value={signUpData.matric_no}
+                    <LightInput placeholder="Matric no. (VUG/CSC/21/045)" value={signUpData.matric_no}
                       onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} />
                     <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
                       <SelectTrigger style={selStyle}>
@@ -278,6 +296,29 @@ export default function Auth() {
               </form>
             </>
           )}
+
+          {/* Demo quick-login (remove later) */}
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px dashed #e4e4e4" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <Sparkles size={13} color="#00c8a8" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b6b6b", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Try a demo
+              </span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              {(["admin","lecturer","student"] as const).map((r) => (
+                <button key={r} type="button" onClick={() => handleDemo(r)} disabled={submitting}
+                  style={{
+                    height: 38, borderRadius: 8, border: "1px solid #e4e4e4",
+                    background: "#f8f8f4", color: "#0a0a0a", fontSize: 12, fontWeight: 600,
+                    cursor: submitting ? "not-allowed" : "pointer", textTransform: "capitalize",
+                    fontFamily: "inherit",
+                  }}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
