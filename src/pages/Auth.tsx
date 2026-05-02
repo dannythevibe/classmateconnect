@@ -215,7 +215,7 @@ export default function Auth() {
 
                 {signUpData.role === "student" && (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <LightInput placeholder="Matric no. (CSC/21/045)" value={signUpData.matric_no}
+                    <LightInput placeholder="Matric no. (VUG/CSC/21/045)" value={signUpData.matric_no}
                       onChange={(e) => setSignUpData({ ...signUpData, matric_no: e.target.value })} />
                     <Select value={signUpData.level} onValueChange={(v) => setSignUpData({ ...signUpData, level: v })}>
                       <SelectTrigger style={selStyle}>
