@@ -69,6 +69,23 @@ export default function Auth() {
     else toast.success("Welcome to Attendly!");
   };
 
+  const handleDemo = async (role: "admin" | "lecturer" | "student") => {
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("seed-demo", { body: { role } });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Demo seed failed");
+      const { email, password } = data.credentials;
+      const { error: siErr } = await signIn(email, password);
+      if (siErr) throw new Error(siErr);
+      toast.success(`Logged in as demo ${role}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div style={{
       minHeight: "100vh",
