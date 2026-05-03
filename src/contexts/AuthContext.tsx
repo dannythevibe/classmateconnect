@@ -87,6 +87,8 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
       name: supaUser.user_metadata?.name || "User",
       email: supaUser.email || "",
       role: (supaUser.user_metadata?.role as Role) || "student",
+      department: supaUser.user_metadata?.department || "",
+      level: supaUser.user_metadata?.level || "",
     };
   }
 }
@@ -179,7 +181,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
-    await supabase.from("profiles").update(data).eq("user_id", user.id);
+    const profileUpdate: {
+      name?: string;
+      email?: string;
+      department?: string;
+      level?: string;
+      matric_no?: string | null;
+    } = {};
+    if (data.name !== undefined) profileUpdate.name = data.name;
+    if (data.email !== undefined) profileUpdate.email = data.email;
+    if (data.department !== undefined) profileUpdate.department = data.department;
+    if (data.level !== undefined) profileUpdate.level = data.level;
+    if (data.matric_no !== undefined) profileUpdate.matric_no = data.matric_no ?? null;
+    await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
     setUser({ ...user, ...data });
   };
 
