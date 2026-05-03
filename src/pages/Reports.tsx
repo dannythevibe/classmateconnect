@@ -8,6 +8,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { toast } from "sonner";
 import { exportToCSV } from "@/lib/export";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 export default function Reports() {
   const { user } = useAuth();
