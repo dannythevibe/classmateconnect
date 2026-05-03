@@ -222,6 +222,8 @@ export default function NewCourseDialog() {
               <Input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} placeholder="LH-3" className="h-12 rounded-2xl bg-muted/20" />
             </div>
           </div>
+
+
         </div>
         <DialogFooter className="mt-8 gap-3 sm:justify-start">
           <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="h-12 flex-1 rounded-2xl gradient-primary font-bold shadow-glow text-base">

@@ -34,14 +34,20 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
   try {
     const fetchTask = Promise.all([
       supabase.from("profiles").select("*").eq("user_id", supaUser.id).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", supaUser.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", supaUser.id),
     ]);
 
     const results = await withTimeout(fetchTask, 3000, [{ data: null }, { data: null }] as any);
     const [{ data: profile }, { data: roleRow }] = results;
+    const roleRows = roleRow; // Aliasing for compatibility with rest of function
+
+    // Pick highest-priority role if user has multiple rows (admin > lecturer > student)
+    const rolesList = (roleRows ?? []).map((r: any) => r.role);
+    const pickRole = (list: string[]) =>
+      list.includes("admin") ? "admin" : list.includes("lecturer") ? "lecturer" : list.includes("student") ? "student" : undefined;
 
     let finalProfile = profile;
-    let finalRole = roleRow?.role;
+    let finalRole: any = pickRole(rolesList);
 
     if (!finalProfile) {
       const meta = supaUser.user_metadata || {};

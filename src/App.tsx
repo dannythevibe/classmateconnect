@@ -21,6 +21,8 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminAuth from "./pages/AdminAuth";
 import LecturerDashboard from "./pages/LecturerDashboard";
+import AttendanceCalendar from "./pages/AttendanceCalendar";
+import LecturerCourseDetail from "./pages/LecturerCourseDetail";
 import NotFound from "./pages/NotFound";
 
 import SyncManager from "./components/SyncManager";
@@ -56,6 +58,8 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
             <Route path="/timetable" element={<ProtectedRoute><AppLayout><Timetable /></AppLayout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><AppLayout><AttendanceCalendar /></AppLayout></ProtectedRoute>} />
+            <Route path="/courses/:courseId" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><LecturerCourseDetail /></AppLayout></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

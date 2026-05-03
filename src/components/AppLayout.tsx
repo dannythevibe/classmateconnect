@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   
   // ACADEMIC SECTION
   { to: "/timetable", label: "Timetable", icon: Calendar, roles: ["student", "lecturer", "admin"], section: "Academic" },
+  { to: "/calendar", label: "Attendance Calendar", icon: Calendar, roles: ["student", "lecturer", "admin"], section: "Academic" },
   { to: "/students", label: "Students", icon: Users, roles: ["lecturer"], section: "Academic" },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["lecturer", "admin"], section: "Academic" },
   
