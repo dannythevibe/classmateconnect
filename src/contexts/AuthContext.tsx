@@ -23,7 +23,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
