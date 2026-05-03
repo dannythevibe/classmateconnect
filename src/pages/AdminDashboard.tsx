@@ -120,11 +120,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <NewCourseDialog>
-             <Button className="h-12 rounded-2xl bg-black text-white font-bold px-6 shadow-xl hover:scale-105 transition-transform">
-                <Plus className="mr-2 h-4 w-4" /> Upload Course
-             </Button>
-          </NewCourseDialog>
+          <NewCourseDialog />
           <Button variant="outline" className="h-12 rounded-2xl border-2 font-bold px-6 bg-white/50 backdrop-blur-sm">
              <Settings className="mr-2 h-4 w-4" /> Settings
           </Button>
