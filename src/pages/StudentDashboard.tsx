@@ -11,6 +11,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Too
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 async function fetchRecentRecordsForUser(studentId: string | null) {
   if (!studentId) return [] as (AttendanceRecord & { courses: { code: string; title: string } | null })[];
@@ -136,7 +137,7 @@ export default function StudentDashboard() {
         <StatCard label="Enrolled Courses" value={myEnrollments.length} icon={<BookOpen className="h-5 w-5" />} description="Active Semester" variant="primary" />
         <StatCard label="Overall Attendance" value={`${overall}%`} icon={<TrendingUp className="h-5 w-5" />} description="Average Rate" variant="success" />
         <StatCard label="Late Marks" value={studentRecs.filter(r => r.status === "late").length} icon={<Clock className="h-5 w-5" />} description="Last 30 days" variant="accent" />
-        <StatCard label="Alerts" value={notifs.filter(n => n.type === "alert").length} icon={<AlertTriangle className="h-5 w-5" />} description="Attention needed" variant="danger" />
+        <StatCard label="Alerts" value={notifs.filter(n => n.type === "warning").length} icon={<AlertTriangle className="h-5 w-5" />} description="Attention needed" variant="accent" />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -180,7 +181,7 @@ export default function StudentDashboard() {
                <CardContent className="space-y-4">
                   {notifs.map((n) => (
                     <div key={n.id} className="flex gap-3">
-                       <div className={cn("mt-1 h-2 w-2 rounded-full shrink-0", n.type === "alert" ? "bg-destructive" : "bg-primary")} />
+                       <div className={cn("mt-1 h-2 w-2 rounded-full shrink-0", n.type === "warning" ? "bg-destructive" : "bg-primary")} />
                        <div>
                           <p className="text-xs font-bold leading-tight">{n.title}</p>
                           <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{n.message}</p>

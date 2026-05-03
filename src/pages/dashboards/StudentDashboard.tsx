@@ -24,9 +24,9 @@ export default function StudentDashboard() {
   const { user } = useAuth();
 
   const { data: myStudent } = useQuery({
-    queryKey: ["my-student", user?.matricNo],
-    queryFn: () => fetchMyStudentRow(user?.matricNo),
-    enabled: !!user?.matricNo,
+    queryKey: ["my-student", user?.matric_no],
+    queryFn: () => fetchMyStudentRow(user?.matric_no),
+    enabled: !!user?.matric_no,
   });
 
   const { data: enrollIds = [] } = useQuery({
@@ -68,7 +68,7 @@ export default function StudentDashboard() {
               Welcome, <span className="text-primary">{user?.name?.split(" ")[0]}</span>
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Matric No: <span className="font-bold text-foreground">{user?.matricNo || "—"}</span> · {user?.department} · {user?.level} Level
+              Matric No: <span className="font-bold text-foreground">{user?.matric_no || "—"}</span> · {user?.department} · {user?.level} Level
             </p>
           </div>
           <Button asChild size="lg">
