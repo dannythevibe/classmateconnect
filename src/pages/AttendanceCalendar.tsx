@@ -21,8 +21,8 @@ export default function AttendanceCalendar() {
   }, [courses, user]);
 
   const { data: student } = useQuery({
-    queryKey: ["my-student", user?.matricNo],
-    queryFn: () => fetchMyStudentRow(user?.matricNo),
+    queryKey: ["my-student", user?.matric_no],
+    queryFn: () => fetchMyStudentRow(user?.matric_no),
     enabled: !!user && user.role === "student",
   });
 
