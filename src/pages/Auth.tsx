@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Role } from "@/lib/mock-data";
-import { GraduationCap, Loader2, Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react";
+import { GraduationCap, Loader2, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -69,27 +69,11 @@ export default function Auth() {
     else toast.success("Welcome to Attendly!");
   };
 
-  const handleDemo = async (role: "admin" | "lecturer" | "student") => {
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("seed-demo", { body: { role } });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error || "Demo seed failed");
-      const { email, password } = data.credentials;
-      const { error: siErr } = await signIn(email, password);
-      if (siErr) throw new Error(siErr);
-      toast.success(`Logged in as demo ${role}`);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundColor: "#f2f2ed",   // matches landing page exactly
+      backgroundColor: "#f2f2ed",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "24px 16px",
       fontFamily: "'Inter', system-ui, sans-serif",
@@ -135,7 +119,7 @@ export default function Auth() {
             </span>
           </div>
 
-          {/* Back to website */}
+          {/* Back to website (Desktop Only) */}
           <button
             onClick={() => navigate("/")}
             style={{
@@ -181,6 +165,20 @@ export default function Auth() {
           display: "flex", flexDirection: "column", justifyContent: "center",
           overflowY: "auto",
         }}>
+
+           {/* Mobile Logo Link (Common for both tabs) */}
+           <div 
+              onClick={() => navigate("/")}
+              style={{ cursor: "pointer" }}
+              className="mobile-logo-link hidden"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 24 }}>
+                <div style={{ background: "#0a0a0a", color: "#fff", borderRadius: 8, padding: 6 }}>
+                  <GraduationCap size={18} />
+                </div>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "#0a0a0a" }}>Attendly</span>
+              </div>
+            </div>
 
           {tab === "signup" ? (
             <>
@@ -297,28 +295,6 @@ export default function Auth() {
             </>
           )}
 
-          {/* Demo quick-login (remove later) */}
-          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px dashed #e4e4e4" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <Sparkles size={13} color="#00c8a8" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#6b6b6b", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Try a demo
-              </span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-              {(["admin","lecturer","student"] as const).map((r) => (
-                <button key={r} type="button" onClick={() => handleDemo(r)} disabled={submitting}
-                  style={{
-                    height: 38, borderRadius: 8, border: "1px solid #e4e4e4",
-                    background: "#f8f8f4", color: "#0a0a0a", fontSize: 12, fontWeight: 600,
-                    cursor: submitting ? "not-allowed" : "pointer", textTransform: "capitalize",
-                    fontFamily: "inherit",
-                  }}>
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -326,6 +302,11 @@ export default function Auth() {
         @media (max-width: 640px) {
           .auth-card { grid-template-columns: 1fr !important; }
           .auth-left { display: none !important; }
+          .mobile-logo-link { display: flex !important; }
+        }
+
+        @media (min-width: 641px) {
+          .mobile-back-btn { display: none !important; }
         }
 
         /* Override shadcn SelectItem highlight from pink → teal */

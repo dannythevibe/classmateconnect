@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { GraduationCap, CheckCircle2, ChevronDown, ArrowRight } from "lucide-react";
+import { GraduationCap, CheckCircle2, ChevronDown, ArrowRight, Menu, X } from "lucide-react";
 
 // ── colour tokens (Lawtrades-exact palette) ──────────────────────────────────
 const C = {
@@ -21,6 +21,7 @@ const C = {
 export default function Landing() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate("/dashboard", { replace: true });
@@ -40,16 +41,21 @@ export default function Landing() {
       />
 
       {/* ── Navbar ──────────────────────────────────────────────────────────── */}
-      <header style={{ position: "relative", zIndex: 10, width: "100%", padding: "22px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", boxSizing: "border-box" }}>
+      <header style={{ 
+        position: "relative", zIndex: 100, width: "100%", 
+        display: "flex", alignItems: "center", justifyContent: "space-between", boxSizing: "border-box" 
+      }} className="landing-header">
 
         {/* Logo — far left */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <GraduationCap size={22} color={C.black} />
+          <div style={{ background: C.black, borderRadius: 8, padding: 6 }}>
+            <GraduationCap size={18} color="#fff" />
+          </div>
           <span style={{ fontWeight: 800, fontSize: 17, letterSpacing: "-0.4px", color: C.black }}>Attendly</span>
         </div>
 
-        {/* Nav links — centre */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 32, position: "absolute", left: "50%", transform: "translateX(-50%)" }} className="hidden md:flex">
+        {/* Nav links — centre (Desktop only) */}
+        <nav style={{ display: "flex", alignItems: "center", gap: 32, position: "absolute", left: "50%", transform: "translateX(-50%)" }} className="desktop-nav">
           {[["For Students", true], ["For Lecturers", true], ["About", false], ["Features", true]].map(([label, arrow]) => (
             <a
               key={label as string}
@@ -64,21 +70,72 @@ export default function Landing() {
           ))}
         </nav>
 
-        {/* CTA buttons — far right */}
+        {/* CTA buttons + Hamburger */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div className="desktop-ctas" style={{ alignItems: "center", gap: 4 }}>
+            <button
+              onClick={() => navigate("/auth")}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.black, padding: "0 12px" }}
+            >
+              Log In
+            </button>
+            <button
+              onClick={() => navigate("/auth")}
+              style={{ background: C.black, color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              Get Started
+            </button>
+          </div>
+
           <button
-            onClick={() => navigate("/auth")}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, color: C.black, padding: "8px 14px" }}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            style={{ 
+              background: "rgba(10,10,10,0.05)", border: "none", borderRadius: 8, 
+              width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", 
+              cursor: "pointer", zIndex: 110 
+            }}
+            className="mobile-hamburger"
           >
-            Log In
-          </button>
-          <button
-            onClick={() => navigate("/auth")}
-            style={{ background: C.black, color: "#fff", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", letterSpacing: "-0.2px" }}
-          >
-            Get Started
+            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+
+        {/* Mobile Drawer */}
+        {isMenuOpen && (
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: C.bg, zIndex: 105, display: "flex", flexDirection: "column",
+            padding: "80px 24px 40px", animateIn: "fade-in"
+          }} className="mobile-drawer">
+            <nav style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {[["For Students", true], ["For Lecturers", true], ["About", false], ["Features", true]].map(([label]) => (
+                <a
+                  key={label as string}
+                  href="#"
+                  onClick={() => setIsMenuOpen(false)}
+                  style={{ fontSize: 24, fontWeight: 700, color: C.black, textDecoration: "none", letterSpacing: "-0.5px" }}
+                >
+                  {label as string}
+                </a>
+              ))}
+            </nav>
+            
+            <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 12 }}>
+              <button
+                onClick={() => navigate("/auth")}
+                style={{ width: "100%", height: 54, background: "transparent", border: `1.5px solid ${C.cardBorder}`, borderRadius: 12, fontSize: 16, fontWeight: 700 }}
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => navigate("/auth")}
+                style={{ width: "100%", height: 54, background: C.black, color: "#fff", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 700 }}
+              >
+                Get Started Free
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
@@ -207,10 +264,24 @@ export default function Landing() {
         </div>
       </main>
 
-      {/* Responsive: stack hero on small screens */}
+      {/* Responsive Styles */}
       <style>{`
+        .landing-header { padding: 22px 48px; }
+        .desktop-nav { display: flex !important; }
+        .desktop-ctas { display: flex !important; }
+        .mobile-hamburger { display: none !important; }
+        .mobile-drawer { display: none !important; }
+
+        @media (max-width: 1024px) {
+          .landing-header { padding: 16px 24px !important; }
+          .desktop-nav { display: none !important; }
+          .desktop-ctas { display: none !important; }
+          .mobile-hamburger { display: flex !important; }
+          .mobile-drawer { display: flex !important; }
+        }
+
         @media (max-width: 900px) {
-          .hero-grid { grid-template-columns: 1fr !important; }
+          .hero-grid { grid-template-columns: 1fr !important; padding-top: 20px !important; }
           .hero-cards { display: none !important; }
         }
 

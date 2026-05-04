@@ -1,4 +1,2 @@
 project_id = "ghcrtywgalavokrricsb"
 
-[functions.seed-demo]
-verify_jwt = false

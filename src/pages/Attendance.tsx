@@ -342,8 +342,10 @@ function LecturerView() {
                       
                       <div className="relative group">
                         <div className="absolute -inset-8 bg-primary/20 blur-[100px] rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                        <div className="relative rounded-[3rem] bg-white p-8 shadow-2xl animate-pulse-glow hover:scale-[1.02] transition-transform">
-                          <QRCodeSVG value={activeSession.token} size={300} bgColor="#ffffff" fgColor="#1a0b4d" level="H" includeMargin={true} />
+                        <div className="relative rounded-[3rem] bg-white p-6 sm:p-8 shadow-2xl animate-pulse-glow hover:scale-[1.02] transition-transform flex items-center justify-center">
+                          <div className="w-full max-w-[280px] sm:max-w-[300px]">
+                            <QRCodeSVG value={activeSession.token} size={undefined} style={{ width: '100%', height: 'auto' }} bgColor="#ffffff" fgColor="#1a0b4d" level="H" includeMargin={true} />
+                          </div>
                           <div className="absolute inset-x-8 top-8 h-1 bg-primary/40 animate-scan-line blur-[2px]" />
                         </div>
                       </div>

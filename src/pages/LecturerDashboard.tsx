@@ -259,39 +259,72 @@ export default function LecturerDashboard() {
               </CardHeader>
               <CardContent>
                  <div className="rounded-[2rem] border border-border/40 overflow-hidden">
-                    <table className="w-full text-left">
-                       <thead>
-                          <tr className="bg-muted/30 border-b border-border/40">
-                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Student Name</th>
-                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Matric Number</th>
-                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Attended</th>
-                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Percentage</th>
-                             <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Status</th>
-                          </tr>
-                       </thead>
-                       <tbody className="divide-y divide-border/10">
-                          {filteredReportData.map((s, i) => (
-                            <tr key={i} className="hover:bg-muted/10 transition-colors">
-                               <td className="px-8 py-5 font-bold text-sm">{s.student_name}</td>
-                               <td className="px-8 py-5 font-mono text-xs">{s.matric_no}</td>
-                               <td className="px-8 py-5 text-sm font-bold">{s.attended_count} / {s.total_sessions}</td>
-                               <td className="px-8 py-5">
-                                  <div className="flex items-center gap-3">
-                                     <Progress value={s.attendance_percentage} className="w-20 h-2 rounded-full" />
-                                     <span className="font-black text-xs">{s.attendance_percentage}%</span>
-                                  </div>
-                               </td>
-                               <td className="px-8 py-5">
-                                  {s.attendance_percentage < 80 ? (
-                                    <Badge className="bg-destructive/10 text-destructive border-none font-black text-[9px] uppercase tracking-widest">At Risk</Badge>
-                                  ) : (
-                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase tracking-widest">Safe</Badge>
-                                  )}
-                               </td>
-                            </tr>
-                          ))}
-                       </tbody>
-                    </table>
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                           <tr className="bg-muted/30 border-b border-border/40">
+                              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Student Name</th>
+                              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Matric Number</th>
+                              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Attended</th>
+                              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Percentage</th>
+                              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Status</th>
+                           </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/10">
+                           {filteredReportData.map((s, i) => (
+                             <tr key={i} className="hover:bg-muted/10 transition-colors">
+                                <td className="px-8 py-5 font-bold text-sm">{s.student_name}</td>
+                                <td className="px-8 py-5 font-mono text-xs">{s.matric_no}</td>
+                                <td className="px-8 py-5 text-sm font-bold">{s.attended_count} / {s.total_sessions}</td>
+                                <td className="px-8 py-5">
+                                   <div className="flex items-center gap-3">
+                                      <Progress value={s.attendance_percentage} className="w-20 h-2 rounded-full" />
+                                      <span className="font-black text-xs">{s.attendance_percentage}%</span>
+                                   </div>
+                                </td>
+                                <td className="px-8 py-5">
+                                   {s.attendance_percentage < 80 ? (
+                                     <Badge className="bg-destructive/10 text-destructive border-none font-black text-[9px] uppercase tracking-widest">At Risk</Badge>
+                                   ) : (
+                                     <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase tracking-widest">Safe</Badge>
+                                   )}
+                                </td>
+                             </tr>
+                           ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile View */}
+                    <div className="block md:hidden divide-y divide-border/10">
+                      {filteredReportData.map((s, i) => (
+                        <div key={i} className="p-6 space-y-4">
+                           <div className="flex items-start justify-between">
+                              <div>
+                                 <p className="font-bold text-base tracking-tight">{s.student_name}</p>
+                                 <p className="text-xs font-mono text-muted-foreground mt-0.5">{s.matric_no}</p>
+                              </div>
+                              {s.attendance_percentage < 80 ? (
+                                <Badge className="bg-destructive/10 text-destructive border-none font-black text-[8px] uppercase tracking-widest">At Risk</Badge>
+                              ) : (
+                                <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[8px] uppercase tracking-widest">Safe</Badge>
+                              )}
+                           </div>
+                           <div className="flex items-center justify-between">
+                              <div className="space-y-1">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Attendance</p>
+                                 <p className="text-sm font-black">{s.attended_count} <span className="text-muted-foreground font-medium">/ {s.total_sessions}</span></p>
+                              </div>
+                              <div className="text-right space-y-1">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rate</p>
+                                 <p className="text-sm font-black text-primary">{s.attendance_percentage}%</p>
+                              </div>
+                           </div>
+                           <Progress value={s.attendance_percentage} className="h-1.5 rounded-full" />
+                        </div>
+                      ))}
+                    </div>
                  </div>
               </CardContent>
            </Card>
