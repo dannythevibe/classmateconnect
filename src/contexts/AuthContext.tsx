@@ -64,12 +64,34 @@ async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
 
     if (!finalRole) {
       const metaRole = (supaUser.user_metadata?.role as Role) || "student";
-      supabase.from("user_roles").insert({ user_id: supaUser.id, role: metaRole }).then();
-      finalRole = metaRole;
+      // Never escalate to admin via metadata path
+      const safeRole = metaRole === "admin" ? "student" : metaRole;
+      supabase.from("user_roles").insert({ user_id: supaUser.id, role: safeRole }).then();
+      finalRole = safeRole;
+    }
+
+    // Auto-link student record to user_id if matric_no matches but user_id is not set
+    if (finalRole === "student" && finalProfile?.matric_no) {
+      supabase.from("students")
+        .update({ user_id: supaUser.id })
+        .eq("matric_no", finalProfile.matric_no)
+        .is("user_id", null)
+        .then();
     }
 
     let finalUserRole = (finalRole as Role) || "student";
-    if (supaUser.email === "admin@attendly.edu") finalUserRole = "admin";
+
+    // Self-healing admin promotion: if VITE_ADMIN_EMAIL is set in .env and matches,
+    // ensure this user has the admin role in the DB and use it immediately.
+    const envAdminEmail = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
+    if (envAdminEmail && supaUser.email?.toLowerCase() === envAdminEmail.toLowerCase()) {
+      finalUserRole = "admin";
+      if (!rolesList.includes("admin")) {
+        supabase.from("user_roles")
+          .upsert({ user_id: supaUser.id, role: "admin" }, { onConflict: "user_id,role" })
+          .then();
+      }
+    }
 
     return {
       id: supaUser.id,

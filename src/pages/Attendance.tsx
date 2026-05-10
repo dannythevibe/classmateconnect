@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import { fetchCourses, fetchMyStudentRow, fetchStudentEnrollments, AttendanceSes
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
-import { QrCode, MapPin, Clock, RefreshCw, CheckCircle2, ScanLine, Shield, ShieldCheck, BookOpen, AlertTriangle, History, Loader2, FileText } from "lucide-react";
+import { QrCode, MapPin, Clock, CheckCircle2, ScanLine, Shield, ShieldCheck, BookOpen, AlertTriangle, History, Loader2, FileText, Users, XCircle, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -36,6 +36,8 @@ export default function Attendance() {
 
 /* ================== LECTURER COMMAND CENTER ================== */
 
+type AttMode = "qr" | "token" | "manual";
+
 function LecturerView() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -45,6 +47,9 @@ function LecturerView() {
     [courses, user]
   );
   const [courseId, setCourseId] = useState<string>("");
+  const [mode, setMode] = useState<AttMode>("qr");
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [manualOpen, setManualOpen] = useState(false);
 
   useEffect(() => {
     if (!courseId && myCourses[0]) setCourseId(myCourses[0].id);
@@ -75,14 +80,32 @@ function LecturerView() {
       if (!activeSession) return [];
       const { data, error } = await supabase
         .from("attendance_records")
-        .select("id, students(name), marked_at")
-        .eq("session_id", activeSession.id);
+        .select("id, students(name), marked_at, status")
+        .eq("session_id", activeSession.id)
+        .order("marked_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
     enabled: !!activeSession,
-    refetchInterval: 3000,
+    refetchInterval: 5000,
   });
+
+  // Real-time subscription: refresh roster when a new attendance record arrives
+  useEffect(() => {
+    if (!activeSession?.id) return;
+    const channel = supabase
+      .channel(`session-records-${activeSession.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "attendance_records",
+        filter: `session_id=eq.${activeSession.id}`,
+      }, () => {
+        qc.invalidateQueries({ queryKey: ["session-records", activeSession.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeSession?.id, qc]);
 
   const { data: pendingExcuses = [] } = useQuery({
     queryKey: ["pending-excuses", courseId],
@@ -243,6 +266,55 @@ function LecturerView() {
           <p className="mt-2 max-w-sm text-muted-foreground">You need to create a course in the "My Courses" section before starting a session.</p>
         </div>
       ) : (
+        <>
+        {/* TAKE ATTENDANCE BAR (matches mockup) */}
+        <div className="rounded-3xl border border-border/40 bg-card/60 p-5 shadow-soft backdrop-blur-xl">
+          <h2 className="font-display text-2xl font-black mb-4">Attendance</h2>
+          <div className="grid gap-4 md:grid-cols-4 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Select Class</Label>
+              <Select value={courseId} onValueChange={setCourseId}>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Pick a course" /></SelectTrigger>
+                <SelectContent>
+                  {myCourses.map((c) => <SelectItem key={c.id} value={c.id}>{c.code} — {c.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Attendance Type</Label>
+              <Select value={mode} onValueChange={(v) => setMode(v as AttMode)}>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="qr">QR Code</SelectItem>
+                  <SelectItem value="token">Token</SelectItem>
+                  <SelectItem value="manual">Manual (P / A / L / E)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Attendance Date</Label>
+              <Input type="date" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} className="h-11 rounded-xl" />
+            </div>
+            <Button
+              size="lg"
+              className="h-11 rounded-xl gradient-primary font-bold shadow-glow"
+              onClick={() => {
+                if (!courseId) { toast.error("Pick a course"); return; }
+                if (mode === "manual") setManualOpen(true);
+                else if (!isActive) startMutation.mutate();
+                else toast.message("Session already live below");
+              }}
+              disabled={startMutation.isPending}
+            >
+              {startMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "Take Attendance"}
+            </Button>
+          </div>
+        </div>
+
+        {mode === "manual" && manualOpen && courseId && (
+          <ManualAttendancePanel courseId={courseId} date={attendanceDate} onClose={() => setManualOpen(false)} />
+        )}
+
         <div className="grid gap-8 lg:grid-cols-5">
           <div className="lg:col-span-2 space-y-6">
             <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-6 shadow-elevated backdrop-blur-xl">
@@ -417,6 +489,7 @@ function LecturerView() {
           </div>
 
         </div>
+        </>
       )}
     </div>
   );
@@ -771,6 +844,189 @@ function StudentView() {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+/* ================== MANUAL ATTENDANCE PANEL ================== */
+
+type ManualStatus = "present" | "absent" | "late" | "excused";
+
+function ManualAttendancePanel({ courseId, date, onClose }: { courseId: string; date: string; onClose: () => void }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: enrolled = [], isLoading } = useQuery({
+    queryKey: ["manual-roll", courseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("student_id, students(id, name, matric_no)")
+        .eq("course_id", courseId);
+      if (error) throw error;
+      return (data ?? []).map((e: any) => e.students).filter(Boolean);
+    },
+  });
+
+  const [marks, setMarks] = useState<Record<string, ManualStatus>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Default all to absent
+  useEffect(() => {
+    if (enrolled.length > 0) {
+      setMarks(prev => {
+        const next = { ...prev };
+        enrolled.forEach((s: any) => {
+          if (!next[s.id]) next[s.id] = "absent";
+        });
+        return next;
+      });
+    }
+  }, [enrolled]);
+
+  const setStatus = (studentId: string, status: ManualStatus) => {
+    setMarks(prev => ({ ...prev, [studentId]: status }));
+  };
+
+  const markAll = (status: ManualStatus) => {
+    const next: Record<string, ManualStatus> = {};
+    enrolled.forEach((s: any) => { next[s.id] = status; });
+    setMarks(next);
+  };
+
+  const submit = async () => {
+    if (!user || enrolled.length === 0) return;
+    setSaving(true);
+    try {
+      // Create a synthetic session for this manual date
+      const dateStart = new Date(date + "T08:00:00").toISOString();
+      const dateEnd = new Date(date + "T23:59:59").toISOString();
+
+      const { data: sessionData, error: sessErr } = await supabase
+        .from("attendance_sessions")
+        .insert({
+          course_id: courseId,
+          lecturer_id: user.id,
+          token: `manual-${courseId.slice(0, 6)}-${Date.now()}`,
+          expires_at: dateEnd,
+          started_at: dateStart,
+          room: "Manual",
+        })
+        .select("id")
+        .single();
+
+      if (sessErr) throw sessErr;
+
+      const records = enrolled.map((s: any) => ({
+        session_id: sessionData.id,
+        course_id: courseId,
+        student_id: s.id,
+        status: marks[s.id] ?? "absent",
+        method: "manual" as const,
+        marked_at: dateStart,
+        metadata: { recorded_by: user.id, manual: true },
+      }));
+
+      const { error: recErr } = await supabase.from("attendance_records").insert(records);
+      if (recErr) throw recErr;
+
+      toast.success(`Attendance saved for ${enrolled.length} student${enrolled.length === 1 ? "" : "s"}`);
+      qc.invalidateQueries({ queryKey: ["my-attendance"] });
+      qc.invalidateQueries({ queryKey: ["session-records"] });
+      onClose();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save attendance");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const statusColors: Record<ManualStatus, string> = {
+    present: "bg-emerald-500 text-white border-emerald-500",
+    absent: "bg-destructive text-white border-destructive",
+    late: "bg-amber-500 text-white border-amber-500",
+    excused: "bg-blue-500 text-white border-blue-500",
+  };
+  const statusLabels: Record<ManualStatus, string> = {
+    present: "P", absent: "A", late: "L", excused: "E",
+  };
+
+  return (
+    <div className="rounded-[2.5rem] border border-border/40 bg-card/60 p-6 shadow-elevated backdrop-blur-xl animate-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+            <UserCheck className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-display text-xl font-bold">Manual Roll Call</h3>
+            <p className="text-xs text-muted-foreground">{date} · {enrolled.length} student{enrolled.length !== 1 ? "s" : ""} enrolled</p>
+          </div>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+          <XCircle className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Bulk actions */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="text-xs font-bold text-muted-foreground self-center">Mark all:</span>
+        {(["present", "absent", "late", "excused"] as ManualStatus[]).map(s => (
+          <button key={s} onClick={() => markAll(s)} className={cn("rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 active:scale-95", statusColors[s])}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : enrolled.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 opacity-40 text-center">
+          <Users className="h-10 w-10 mb-3" />
+          <p className="font-bold text-sm">No students enrolled in this course yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-1">
+          {enrolled.map((s: any) => {
+            const current = marks[s.id] ?? "absent";
+            return (
+              <div key={s.id} className="flex items-center gap-3 rounded-2xl border border-border/20 bg-background/40 p-3 hover:bg-background/60 transition-all">
+                <Avatar className="h-9 w-9 shrink-0">
+                  <AvatarFallback className="text-[10px] font-black">{s.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-bold truncate">{s.name}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono">{s.matric_no}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  {(["present", "absent", "late", "excused"] as ManualStatus[]).map(st => (
+                    <button
+                      key={st}
+                      onClick={() => setStatus(s.id, st)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg border text-[10px] font-black transition-all hover:scale-110 active:scale-95",
+                        current === st ? statusColors[st] : "border-border/40 text-muted-foreground hover:border-primary/40"
+                      )}
+                      title={st}
+                    >
+                      {statusLabels[st]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-end gap-3">
+        <Button variant="outline" onClick={onClose} className="rounded-xl">Cancel</Button>
+        <Button onClick={submit} disabled={saving || enrolled.length === 0} className="rounded-xl gradient-primary font-bold px-8 shadow-glow">
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Save Attendance ({enrolled.length})</>}
+        </Button>
+      </div>
     </div>
   );
 }

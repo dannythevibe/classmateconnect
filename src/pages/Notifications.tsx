@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
-const icons = { success: CheckCircle2, warning: AlertTriangle, info: Info } as const;
-const colors = {
+const icons: Record<string, any> = { success: CheckCircle2, warning: AlertTriangle, info: Info };
+const colors: Record<string, string> = {
   success: "bg-success/10 text-success",
   warning: "bg-warning/15 text-warning",
   info: "bg-primary/10 text-primary",
-} as const;
+};
 
 async function fetchNotifications(userId: string): Promise<NotificationRow[]> {
   const { data, error } = await supabase
@@ -33,6 +34,17 @@ export default function Notifications() {
     queryFn: () => fetchNotifications(user!.id),
     enabled: !!user,
   });
+
+  // Live updates
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`notif-rt-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => qc.invalidateQueries({ queryKey: ["notifications", user.id] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user, qc]);
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
@@ -75,7 +87,7 @@ export default function Notifications() {
       ) : (
         <div className="space-y-3">
           {notifications.map((n) => {
-            const Icon = icons[n.type];
+            const Icon = icons[n.type] ?? Info;
             return (
               <button
                 key={n.id}

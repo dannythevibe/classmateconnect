@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchCourses, fetchEnrollmentCounts, fetchAttendanceRates, fetchStudentEnrollments, enrollInCourse, unenrollFromCourse, fetchMyStudentRow } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Search, Users, Clock, MapPin, TrendingUp, BookOpen, PlusCircle, CheckCircle2, Filter, GraduationCap, XCircle, Loader2 } from "lucide-react";
@@ -45,8 +47,32 @@ export default function Courses() {
 
   const enrollMutation = useMutation({
     mutationFn: async (courseId: string) => {
-      if (!myStudent) throw new Error("Student profile not found. Contact Admin.");
-      await enrollInCourse(myStudent.id, courseId);
+      let studentId = myStudent?.id;
+
+      // If no student record exists yet, auto-create one from the user profile
+      if (!studentId && user?.matric_no) {
+        const { data: created, error: cErr } = await supabase.from("students").insert({
+          user_id: user.id,
+          name: user.name,
+          matric_no: user.matric_no,
+          department: user.department ?? "General",
+          level: user.level ?? "100",
+          created_by: user.id,
+        }).select("id").single();
+        if (cErr && cErr.code !== "23505") throw new Error("Could not create student record. Contact Admin.");
+        if (created) {
+          studentId = created.id;
+          qc.invalidateQueries({ queryKey: ["my-student"] });
+        } else {
+          // Already existed (unique constraint) — fetch it
+          const { data: existing } = await supabase.from("students").select("id").eq("matric_no", user.matric_no!).maybeSingle();
+          if (!existing) throw new Error("Student profile not found. Contact Admin.");
+          studentId = existing.id;
+        }
+      }
+
+      if (!studentId) throw new Error("No matric number on your profile. Contact Admin to set it up.");
+      await enrollInCourse(studentId, courseId);
     },
     onSuccess: () => {
       toast.success("Enrolled successfully");
@@ -68,6 +94,18 @@ export default function Courses() {
     },
   });
 
+  // Realtime: refresh enrollment data when any change happens server-side
+  useEffect(() => {
+    const ch = supabase
+      .channel("courses-enrollments-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "enrollments" }, () => {
+        qc.invalidateQueries({ queryKey: ["enrollment-counts"] });
+        qc.invalidateQueries({ queryKey: ["my-enrollments"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qc]);
+
   const filtered = useMemo(() => {
     return courses.filter((c) => {
       const matchesSearch = c.code.toLowerCase().includes(q.toLowerCase()) || c.title.toLowerCase().includes(q.toLowerCase());
@@ -75,8 +113,10 @@ export default function Courses() {
 
       if (user?.role === "student") {
         if (filterMode === "fit") {
-          const deptMatch = !c.department || c.department.toLowerCase() === user.department?.toLowerCase();
-          const levelMatch = !c.level || c.level === user.level || (user.matric_no && c.level === user.matric_no.substring(0, 1) + "00"); // Fallback for 100, 200 etc
+          const deptMatch = !c.department || c.department.toLowerCase() === (user.department || "").toLowerCase();
+          // Normalize level: "100", "100L", "100 Level" → "100"
+          const normalizeLevel = (v: string | null | undefined) => (v || "").replace(/[^0-9]/g, "");
+          const levelMatch = !c.level || normalizeLevel(c.level) === normalizeLevel(user.level);
           return deptMatch && levelMatch;
         }
         if (filterMode === "enrolled") {
@@ -163,15 +203,17 @@ export default function Courses() {
 
             return (
               <div key={c.id} className="group relative overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/60 shadow-elevated backdrop-blur-xl transition-all hover:scale-[1.02] hover:shadow-2xl">
-                <div className={cn("h-40 bg-gradient-to-br p-8 text-white relative", c.color)}>
-                  <div className="absolute top-8 right-8 flex flex-col items-end gap-2">
-                     {c.level && <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[10px] py-1 px-3 rounded-lg uppercase tracking-widest">{c.level}L</Badge>}
-                     {c.department && <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[10px] py-1 px-3 rounded-lg uppercase tracking-widest truncate max-w-[100px]">{c.department}</Badge>}
+                <Link to={`/courses/${c.id}`} className="block">
+                  <div className={cn("h-40 bg-gradient-to-br p-8 text-white relative cursor-pointer", c.color)}>
+                    <div className="absolute top-8 right-8 flex flex-col items-end gap-2">
+                       {c.level && <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[10px] py-1 px-3 rounded-lg uppercase tracking-widest">{c.level}L</Badge>}
+                       {c.department && <Badge className="bg-white/20 backdrop-blur-md text-white border-none font-black text-[10px] py-1 px-3 rounded-lg uppercase tracking-widest truncate max-w-[100px]">{c.department}</Badge>}
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-[0.2em] opacity-80">{c.code}</p>
+                    <h3 className="mt-2 font-display text-2xl font-black leading-tight tracking-tighter">{c.title}</h3>
+                    <p className="text-xs font-bold opacity-70 mt-2 truncate">Lec: {c.lecturer_name}</p>
                   </div>
-                  <p className="text-xs font-black uppercase tracking-[0.2em] opacity-80">{c.code}</p>
-                  <h3 className="mt-2 font-display text-2xl font-black leading-tight tracking-tighter">{c.title}</h3>
-                  <p className="text-xs font-bold opacity-70 mt-2 truncate">Lec: {c.lecturer_name}</p>
-                </div>
+                </Link>
                 
                 <div className="p-8 space-y-6">
                   <div className="grid grid-cols-2 gap-4">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -121,9 +122,11 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <NewCourseDialog />
-          <Button variant="outline" className="h-12 rounded-2xl border-2 font-bold px-6 bg-white/50 backdrop-blur-sm">
-             <Settings className="mr-2 h-4 w-4" /> Settings
-          </Button>
+          <Link to="/profile">
+            <Button variant="outline" className="h-12 rounded-2xl border-2 font-bold px-6 bg-white/50 backdrop-blur-sm">
+              <Settings className="mr-2 h-4 w-4" /> Settings
+            </Button>
+          </Link>
         </div>
       </header>
 

@@ -40,6 +40,7 @@ const navItems: NavItem[] = [
   // ADMIN SECTION
   { to: "/admin", label: "Admin Console", icon: ShieldCheck, roles: ["admin"], section: "Management" },
   { to: "/admin/users", label: "User Management", icon: Users, roles: ["admin"], section: "Management" },
+  { to: "/admin/audit", label: "System Audit", icon: ShieldCheck, roles: ["admin"], section: "Management" },
   { to: "/courses", label: "Academic Catalog", icon: BookOpen, roles: ["admin"], section: "Management" },
 
   // SYSTEM SECTION
@@ -207,30 +208,44 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 z-40 flex h-16 w-full items-center justify-around border-t border-border/40 bg-background/80 px-2 pb-safe backdrop-blur-md lg:hidden">
-        {filteredItems.slice(0, 5).map((item) => {
-          const isActive = location.pathname === item.to;
-          return (
-            <NavLink
-              key={`mobile-${item.to}-${item.label}`}
-              to={item.to}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-all duration-300",
-                isActive ? "text-primary" : "text-muted-foreground"
-              )}
-            >
-              <item.icon className={cn("h-5 w-5", isActive && "animate-in zoom-in-75 duration-300")} />
-              <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
-              {isActive && <div className="h-1 w-1 rounded-full bg-primary animate-in fade-in zoom-in duration-300" />}
-            </NavLink>
-          );
-        })}
+      {/* Mobile Bottom Navigation — role-aware, max 5 items */}
+      <nav className="fixed bottom-0 left-0 z-40 flex h-16 w-full items-center justify-around border-t border-border/40 bg-background/80 px-2 backdrop-blur-md lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        {(() => {
+          // Pick the most important items per role for the bottom bar
+          const roleBottomItems: Record<string, string[]> = {
+            student:  ["/dashboard", "/courses", "/attendance", "/ai-assistant", "/notifications"],
+            lecturer: ["/dashboard", "/attendance", "/courses", "/students", "/notifications"],
+            admin:    ["/admin", "/admin/users", "/courses", "/ai-assistant", "/notifications"],
+          };
+          const preferred = roleBottomItems[user.role as string] ?? roleBottomItems.student;
+          const bottomNav = preferred
+            .map(path => filteredItems.find(i => i.to === path))
+            .filter(Boolean)
+            .slice(0, 5) as NavItem[];
+
+          return bottomNav.map((item) => {
+            const isActive = location.pathname === item.to || (item.to !== "/" && location.pathname.startsWith(item.to));
+            return (
+              <NavLink
+                key={`mobile-${item.to}-${item.label}`}
+                to={item.to}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 min-w-0 transition-all duration-300",
+                  isActive ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5 shrink-0", isActive && "animate-in zoom-in-75 duration-300")} />
+                <span className="text-[9px] font-bold uppercase tracking-tight truncate max-w-[48px] text-center">{item.label}</span>
+                {isActive && <div className="h-1 w-1 rounded-full bg-primary animate-in fade-in zoom-in duration-300" />}
+              </NavLink>
+            );
+          });
+        })()}
       </nav>
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 lg:pt-0 lg:ml-72 min-h-screen flex flex-col mb-16 lg:mb-0">
-        <div className="flex-1 mx-auto w-full px-4 py-8 lg:px-10 lg:py-12 animate-in fade-in duration-500">
+      <main className="flex-1 pt-16 lg:pt-0 lg:ml-72 min-h-screen flex flex-col" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
+        <div className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-10 lg:py-12 animate-in fade-in duration-500 lg:pb-12">
           {children}
         </div>
       </main>

@@ -38,7 +38,10 @@ export default function Auth() {
   });
 
   useEffect(() => {
-    if (!loading && user) navigate("/dashboard", { replace: true });
+    if (!loading && user) {
+      if (user.role === "admin") navigate("/admin", { replace: true });
+      else navigate("/dashboard", { replace: true });
+    }
   }, [user, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {

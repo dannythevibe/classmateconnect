@@ -105,7 +105,7 @@ export default function Landing() {
           <div style={{
             position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: C.bg, zIndex: 105, display: "flex", flexDirection: "column",
-            padding: "80px 24px 40px", animateIn: "fade-in"
+            padding: "80px 24px 40px"
           }} className="mobile-drawer">
             <nav style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               {[["For Students", true], ["For Lecturers", true], ["About", false], ["Features", true]].map(([label]) => (
