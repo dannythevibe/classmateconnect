@@ -114,10 +114,6 @@ export default function AdminDashboard() {
           </div>
           <div>
             <h1 className="font-display text-4xl font-black tracking-tighter text-foreground">Admin Console</h1>
-            <p className="text-sm text-muted-foreground font-medium flex items-center gap-2">
-              <Activity size={14} className="text-emerald-500" />
-              System Status: <span className="text-foreground font-bold">Operational</span>
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
