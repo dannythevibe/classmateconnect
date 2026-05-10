@@ -51,22 +51,23 @@ export default function Courses() {
 
       // Auto-create student record if it doesn't exist yet
       if (!studentId) {
+        const matricNo = user.matric_no || `STU-${user.id.slice(0, 8).toUpperCase()}`;
         const { data: created, error: cErr } = await supabase.from("students").insert({
-          user_id: user.id,
           name: user.name,
-          matric_no: user.matric_no || null,
+          matric_no: matricNo,
           department: user.department ?? "General",
           level: user.level ?? "100",
-          created_by: user.id,
         }).select("id").single();
-        if (cErr && cErr.code !== "23505") throw new Error("Could not create student record. Contact admin.");
+
+        if (cErr && cErr.code !== "23505") throw new Error("Enrollment failed. Please sign out and sign back in, then try again.");
+
         if (created) {
           studentId = created.id;
           qc.invalidateQueries({ queryKey: ["my-student"] });
         } else {
-          // Row already exists — fetch it by user_id
-          const { data: existing } = await supabase.from("students").select("id").eq("user_id", user.id).maybeSingle();
-          if (!existing) throw new Error("Student profile not found. Contact admin.");
+          // Row already exists — fetch it by matric_no
+          const { data: existing } = await supabase.from("students").select("id").eq("matric_no", matricNo).maybeSingle();
+          if (!existing) throw new Error("Enrollment failed. Please sign out and sign back in, then try again.");
           studentId = existing.id;
         }
       }

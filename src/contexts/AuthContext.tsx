@@ -65,19 +65,16 @@ async function fetchUser(supaUser: SupabaseUser): Promise<User> {
 
   // Auto-create student record so enrollment always works
   if (role === "student") {
-    supabase.from("students").select("id").eq("user_id", supaUser.id).maybeSingle().then(({ data }) => {
-      if (!data) {
-        const meta = supaUser.user_metadata || {};
-        const name = profile?.name || meta.name || supaUser.email?.split("@")[0] || "Student";
-        supabase.from("students").insert({
-          user_id: supaUser.id,
-          name,
-          matric_no: profile?.matric_no || meta.matric_no || null,
-          department: profile?.department || meta.department || "General",
-          level: profile?.level || meta.level || "100",
-        }).then();
-      }
-    });
+    const meta = supaUser.user_metadata || {};
+    const matricNo = profile?.matric_no || meta.matric_no || `STU-${supaUser.id.slice(0, 8).toUpperCase()}`;
+    supabase.from("students")
+      .insert({
+        name: profile?.name || meta.name || supaUser.email?.split("@")[0] || "Student",
+        matric_no: matricNo,
+        department: profile?.department || meta.department || "General",
+        level: profile?.level || meta.level || "100",
+      })
+      .then(); // Silently ignores if already exists (unique constraint on matric_no)
   }
 
   return {

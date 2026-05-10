@@ -169,13 +169,14 @@ export async function fetchActiveSessionByToken(token: string): Promise<(Attenda
 
 
 export async function fetchMyStudentRow(userId: string, matric_no?: string): Promise<Student | null> {
-  // Try by matric_no first
+  // Try by matric_no first (exact match)
   if (matric_no) {
     const { data } = await supabase.from("students").select("*").eq("matric_no", matric_no).maybeSingle();
     if (data) return data as Student;
   }
-  // Fall back to user_id
-  const { data } = await supabase.from("students").select("*").eq("user_id", userId).maybeSingle();
+  // Fall back to auto-generated matric from userId
+  const fallbackMatric = `STU-${userId.slice(0, 8).toUpperCase()}`;
+  const { data } = await supabase.from("students").select("*").eq("matric_no", fallbackMatric).maybeSingle();
   return data as Student | null;
 }
 
