@@ -14,34 +14,25 @@ export default function AdminAuth() {
 
   useEffect(() => {
     if (!loading && user) {
-       if (user.role === "admin") navigate("/admin", { replace: true });
-       else navigate("/dashboard", { replace: true });
+      if (user.role === "admin") navigate("/admin", { replace: true });
+      else navigate("/dashboard", { replace: true });
     }
   }, [user, loading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please enter credentials");
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please enter your credentials");
       return;
     }
     setSubmitting(true);
-
-    // EMERGENCY BYPASS: If login hangs for 5 seconds, try to force navigate
-    const bypassTimer = setTimeout(() => {
-      setSubmitting(false);
-      navigate("/admin", { replace: true });
-    }, 5000);
-
     const { error } = await signIn(email.trim(), password.trim());
-    clearTimeout(bypassTimer);
     setSubmitting(false);
-    
     if (error) {
-      toast.error(error); // Show the specific reason (e.g. email not confirmed)
+      toast.error(error);
     } else {
       toast.success("Security clearance verified");
-      navigate("/admin", { replace: true });
+      // Navigation handled by useEffect above once user state updates
     }
   };
 
@@ -60,9 +51,8 @@ export default function AdminAuth() {
         overflow: "hidden",
         boxShadow: "0 24px 60px rgba(0,0,0,0.12)",
         minHeight: 540,
-        backgroundColor: "#fff"
       }}>
-        {/* LEFT PANEL (Matching original Auth) */}
+        {/* LEFT */}
         <div style={{
           position: "relative", overflow: "hidden",
           backgroundColor: "#f2f2ed",
@@ -75,19 +65,17 @@ export default function AdminAuth() {
             background: "radial-gradient(circle, rgba(0,200,168,0.2) 0%, transparent 65%)",
             pointerEvents: "none",
           }} />
-          
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
             <GraduationCap size={20} color="#0a0a0a" />
             <span style={{ fontSize: 16, fontWeight: 800, color: "#0a0a0a", letterSpacing: "-0.3px" }}>
               Attendly
             </span>
           </div>
-
           <div style={{ position: "relative", marginTop: "auto" }}>
-            <div style={{ 
-              width: 48, height: 48, borderRadius: 14, 
-              background: "#0a0a0a", display: "flex", 
-              alignItems: "center", justifyContent: "center", marginBottom: 20
+            <div style={{
+              width: 48, height: 48, borderRadius: 14,
+              background: "#0a0a0a", display: "flex",
+              alignItems: "center", justifyContent: "center", marginBottom: 20,
             }}>
               <ShieldCheck size={24} color="#fff" />
             </div>
@@ -106,7 +94,7 @@ export default function AdminAuth() {
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
+        {/* RIGHT */}
         <div style={{
           backgroundColor: "#ffffff",
           padding: "44px 48px",
@@ -116,17 +104,17 @@ export default function AdminAuth() {
             Admin Login
           </h2>
           <p style={{ margin: "0 0 32px", fontSize: 13, color: "#6b6b6b" }}>
-            Enter your security credentials to access the console.
+            Enter your credentials to access the admin console.
           </p>
 
           <form onSubmit={handleSignIn} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#6b6b6b", marginLeft: 4 }}>
-                Username / Email
+                Email
               </label>
-              <input 
-                type="email" 
-                placeholder="admin@attendly.edu" 
+              <input
+                type="email"
+                placeholder="admin@attendly.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={inputStyle}
@@ -135,37 +123,33 @@ export default function AdminAuth() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", color: "#6b6b6b", marginLeft: 4 }}>
-                Security Key
+                Password
               </label>
               <div style={{ position: "relative" }}>
-                <input 
-                  type={showPass ? "text" : "password"} 
-                  placeholder="••••••••" 
+                <input
+                  type={showPass ? "text" : "password"}
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   style={{ ...inputStyle, paddingRight: 44 }}
                 />
-                <button 
-                  type="button" 
-                  onClick={() => setShowPass(!showPass)}
+                <button type="button" onClick={() => setShowPass(!showPass)}
                   style={{
                     position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", color: "#aaa",
-                    cursor: "pointer", display: "flex"
-                  }}
-                >
+                    background: "none", border: "none", color: "#aaa", cursor: "pointer", display: "flex",
+                  }}>
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={submitting}
               style={{
                 marginTop: 12, width: "100%", height: 48,
-                background: "#0a0a0a", color: "#fff",
-                border: "none", borderRadius: 10,
+                background: submitting ? "#555" : "#0a0a0a",
+                color: "#fff", border: "none", borderRadius: 10,
                 fontSize: 14, fontWeight: 700,
                 cursor: submitting ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -176,16 +160,16 @@ export default function AdminAuth() {
           </form>
 
           <div style={{ marginTop: 32, textAlign: "center" }}>
-             <button 
-               onClick={() => navigate("/")}
-               style={{
-                 background: "none", border: "none", color: "#6b6b6b",
-                 fontSize: 12, fontWeight: 600, cursor: "pointer",
-                 display: "flex", alignItems: "center", gap: 6, margin: "0 auto"
-               }}
-             >
-               Return to Website <ArrowRight size={14} />
-             </button>
+            <button
+              onClick={() => navigate("/")}
+              style={{
+                background: "none", border: "none", color: "#6b6b6b",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6, margin: "0 auto",
+              }}
+            >
+              Return to Website <ArrowRight size={14} />
+            </button>
           </div>
         </div>
       </div>

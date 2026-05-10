@@ -1,165 +1,134 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User as SupabaseUser } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Role, User } from "@/lib/mock-data";
+
+interface SignUpParams {
+  email: string;
+  password: string;
+  name: string;
+  role: "student" | "lecturer";
+  department: string;
+  level: string;
+  matric_no?: string;
+}
 
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (params: {
-    email: string;
-    password: string;
-    name: string;
-    role: Role;
-    department: string;
-    level: string;
-    matric_no?: string;
-  }) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (params: SignUpParams) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+async function fetchUser(supaUser: SupabaseUser): Promise<User> {
+  const [{ data: profile }, { data: roleRows }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("user_id", supaUser.id).maybeSingle(),
+    supabase.from("user_roles").select("role").eq("user_id", supaUser.id),
   ]);
-};
 
-async function loadUser(supaUser: SupabaseUser): Promise<User | null> {
-  try {
-    const fetchTask = Promise.all([
-      supabase.from("profiles").select("*").eq("user_id", supaUser.id).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", supaUser.id),
-    ]);
-
-    const results = await withTimeout(fetchTask, 3000, [{ data: null }, { data: null }] as any);
-    const [{ data: profile }, { data: roleRow }] = results;
-    const roleRows = roleRow; // Aliasing for compatibility with rest of function
-
-    // Pick highest-priority role if user has multiple rows (admin > lecturer > student)
-    const rolesList = (roleRows ?? []).map((r: any) => r.role);
-    const pickRole = (list: string[]) =>
-      list.includes("admin") ? "admin" : list.includes("lecturer") ? "lecturer" : list.includes("student") ? "student" : undefined;
-
-    let finalProfile = profile;
-    let finalRole: any = pickRole(rolesList);
-
-    if (!finalProfile) {
-      const meta = supaUser.user_metadata || {};
-      const { data: newProfile } = await supabase.from("profiles").insert({
-        user_id: supaUser.id,
-        name: meta.name || supaUser.email?.split("@")[0] || "User",
-        email: supaUser.email,
-        department: meta.department || "General",
-        level: meta.level || "100",
-        matric_no: meta.matric_no || null
-      }).select().maybeSingle();
-      finalProfile = newProfile;
-    }
-
-    if (!finalRole) {
-      const metaRole = (supaUser.user_metadata?.role as Role) || "student";
-      // Never escalate to admin via metadata path
-      const safeRole = metaRole === "admin" ? "student" : metaRole;
-      supabase.from("user_roles").insert({ user_id: supaUser.id, role: safeRole }).then();
-      finalRole = safeRole;
-    }
-
-    // Auto-link student record to user_id if matric_no matches but user_id is not set
-    if (finalRole === "student" && finalProfile?.matric_no) {
-      supabase.from("students")
-        .update({ user_id: supaUser.id })
-        .eq("matric_no", finalProfile.matric_no)
-        .is("user_id", null)
-        .then();
-    }
-
-    let finalUserRole = (finalRole as Role) || "student";
-
-    // Self-healing admin promotion: if VITE_ADMIN_EMAIL is set in .env and matches,
-    // ensure this user has the admin role in the DB and use it immediately.
-    const envAdminEmail = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
-    if (envAdminEmail && supaUser.email?.toLowerCase() === envAdminEmail.toLowerCase()) {
-      finalUserRole = "admin";
-      if (!rolesList.includes("admin")) {
-        supabase.from("user_roles")
-          .upsert({ user_id: supaUser.id, role: "admin" }, { onConflict: "user_id,role" })
-          .then();
-      }
-    }
-
-    return {
-      id: supaUser.id,
-      name: finalProfile?.name || supaUser.user_metadata?.name || "User",
-      email: supaUser.email || "",
-      role: finalUserRole,
-      department: finalProfile?.department || "",
-      level: finalProfile?.level || "",
-      matric_no: finalProfile?.matric_no || undefined,
-    };
-  } catch (err) {
-    console.error("Auth Load Error:", err);
-    return {
-      id: supaUser.id,
-      name: supaUser.user_metadata?.name || "User",
-      email: supaUser.email || "",
-      role: (supaUser.user_metadata?.role as Role) || "student",
-      department: supaUser.user_metadata?.department || "",
-      level: supaUser.user_metadata?.level || "",
-    };
+  // Determine highest-priority role from DB
+  const roles: string[] = (roleRows ?? []).map((r: any) => r.role);
+  let role: Role = "student";
+  if (roles.includes("admin")) role = "admin";
+  else if (roles.includes("lecturer")) role = "lecturer";
+  else if (roles.includes("student")) role = "student";
+  else {
+    // No DB role yet — seed from signup metadata, never allow admin via metadata
+    const metaRole = supaUser.user_metadata?.role as string;
+    role = metaRole === "lecturer" ? "lecturer" : "student";
+    supabase.from("user_roles").insert({ user_id: supaUser.id, role }).then();
   }
+
+  // Create profile if missing
+  if (!profile) {
+    const meta = supaUser.user_metadata || {};
+    supabase.from("profiles").insert({
+      user_id: supaUser.id,
+      name: meta.name || supaUser.email?.split("@")[0] || "User",
+      email: supaUser.email,
+      department: meta.department || "General",
+      level: meta.level || "100",
+      matric_no: meta.matric_no || null,
+    }).then();
+  }
+
+  return {
+    id: supaUser.id,
+    name: profile?.name || supaUser.user_metadata?.name || "User",
+    email: supaUser.email || "",
+    role,
+    department: profile?.department || supaUser.user_metadata?.department || "",
+    level: profile?.level || supaUser.user_metadata?.level || "100",
+    matric_no: profile?.matric_no || undefined,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const loadingUserRef = useRef<string | null>(null);
-
-  const syncUser = async (s: Session | null) => {
-    if (!s?.user) {
-      setUser(null);
-      setSession(null);
-      setLoading(false);
-      return;
-    }
-
-    // Prevent duplicate loading tasks for the same user
-    if (loadingUserRef.current === s.user.id) return;
-    loadingUserRef.current = s.user.id;
-    
-    setSession(s);
-    const u = await loadUser(s.user);
-    setUser(u);
-    setLoading(false);
-    loadingUserRef.current = null;
-  };
 
   useEffect(() => {
-    const forceTimer = setTimeout(() => setLoading(false), 5000);
-
+    // Load initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      syncUser(s);
-      clearTimeout(forceTimer);
+      if (s?.user) {
+        setSession(s);
+        fetchUser(s.user).then(u => {
+          setUser(u);
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
     });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      syncUser(s);
-      clearTimeout(forceTimer);
+      if (s?.user) {
+        setSession(s);
+        fetchUser(s.user).then(u => {
+          setUser(u);
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      } else {
+        setUser(null);
+        setSession(null);
+        setLoading(false);
+      }
     });
 
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(forceTimer);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (params: any) => {
+  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password.trim(),
+    });
+    if (error) {
+      setLoading(false);
+      return { error: error.message };
+    }
+    if (data.session?.user) {
+      try {
+        const u = await fetchUser(data.session.user);
+        setSession(data.session);
+        setUser(u);
+      } catch {
+        // non-fatal
+      }
+    }
+    setLoading(false);
+    return { error: null };
+  };
+
+  const signUp = async (params: SignUpParams): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signUp({
       email: params.email.trim(),
       password: params.password.trim(),
@@ -168,59 +137,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null };
   };
 
-  const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email: email.trim(), 
-        password: password.trim() 
-      });
-      
-      if (error) {
-        setLoading(false);
-        return { error: error.message };
-      }
-      
-      if (data.session) {
-        await syncUser(data.session);
-      }
-      
-      setLoading(false);
-      return { error: null };
-    } catch (err: any) {
-      setLoading(false);
-      return { error: err.message || "An unexpected error occurred" };
-    }
-  };
-
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setLoading(false);
-    loadingUserRef.current = null;
   };
 
   const updateProfile = async (data: Partial<User>) => {
     if (!user) return;
-    const profileUpdate: {
-      name?: string;
-      email?: string;
-      department?: string;
-      level?: string;
-      matric_no?: string | null;
-    } = {};
-    if (data.name !== undefined) profileUpdate.name = data.name;
-    if (data.email !== undefined) profileUpdate.email = data.email;
-    if (data.department !== undefined) profileUpdate.department = data.department;
-    if (data.level !== undefined) profileUpdate.level = data.level;
-    if (data.matric_no !== undefined) profileUpdate.matric_no = data.matric_no ?? null;
-    await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
+    const patch: Record<string, any> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.email !== undefined) patch.email = data.email;
+    if (data.department !== undefined) patch.department = data.department;
+    if (data.level !== undefined) patch.level = data.level;
+    if (data.matric_no !== undefined) patch.matric_no = data.matric_no ?? null;
+    await supabase.from("profiles").update(patch).eq("user_id", user.id);
     setUser({ ...user, ...data });
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -228,6 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth missing");
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }

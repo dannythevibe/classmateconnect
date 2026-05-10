@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import AdminAuth from "./pages/AdminAuth";
 import Dashboard from "./pages/Dashboard";
 import Courses from "./pages/Courses";
 import Students from "./pages/Students";
@@ -20,7 +21,6 @@ import Timetable from "./pages/Timetable";
 import AdminUsers from "./pages/AdminUsers";
 import AdminAudit from "./pages/AdminAudit";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminAuth from "./pages/AdminAuth";
 import LecturerDashboard from "./pages/LecturerDashboard";
 import AttendanceCalendar from "./pages/AttendanceCalendar";
 import LecturerCourseDetail from "./pages/LecturerCourseDetail";
@@ -29,46 +29,46 @@ import SyncManager from "./components/SyncManager";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <SyncManager />
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public */}
-            <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin/login" element={<AdminAuth />} />
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <SyncManager />
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public */}
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/admin/login" element={<AdminAuth />} />
 
-            {/* Admin */}
-            <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminUsers /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin/audit" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminAudit /></AppLayout></ProtectedRoute>} />
+              {/* Admin only */}
+              <Route path="/admin" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminUsers /></AppLayout></ProtectedRoute>} />
+              <Route path="/admin/audit" element={<ProtectedRoute roles={["admin"]}><AppLayout><AdminAudit /></AppLayout></ProtectedRoute>} />
 
-            {/* App */}
-            <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/lecturer" element={<ProtectedRoute roles={["lecturer"]}><AppLayout><LecturerDashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/courses" element={<ProtectedRoute><AppLayout><Courses /></AppLayout></ProtectedRoute>} />
-            <Route path="/courses/:courseId" element={<ProtectedRoute><AppLayout><LecturerCourseDetail /></AppLayout></ProtectedRoute>} />
-            <Route path="/students" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><Students /></AppLayout></ProtectedRoute>} />
-            <Route path="/attendance" element={<ProtectedRoute roles={["student", "lecturer"]}><AppLayout><Attendance /></AppLayout></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><Reports /></AppLayout></ProtectedRoute>} />
-            <Route path="/ai-assistant" element={<ProtectedRoute><AppLayout><AIAssistant /></AppLayout></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
-            <Route path="/timetable" element={<ProtectedRoute><AppLayout><Timetable /></AppLayout></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><AppLayout><AttendanceCalendar /></AppLayout></ProtectedRoute>} />
+              {/* App — authenticated users */}
+              <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
+              <Route path="/lecturer" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><LecturerDashboard /></AppLayout></ProtectedRoute>} />
+              <Route path="/courses" element={<ProtectedRoute><AppLayout><Courses /></AppLayout></ProtectedRoute>} />
+              <Route path="/courses/:courseId" element={<ProtectedRoute><AppLayout><LecturerCourseDetail /></AppLayout></ProtectedRoute>} />
+              <Route path="/students" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><Students /></AppLayout></ProtectedRoute>} />
+              <Route path="/attendance" element={<ProtectedRoute><AppLayout><Attendance /></AppLayout></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute roles={["lecturer", "admin"]}><AppLayout><Reports /></AppLayout></ProtectedRoute>} />
+              <Route path="/ai-assistant" element={<ProtectedRoute><AppLayout><AIAssistant /></AppLayout></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
+              <Route path="/timetable" element={<ProtectedRoute><AppLayout><Timetable /></AppLayout></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><AppLayout><AttendanceCalendar /></AppLayout></ProtectedRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
