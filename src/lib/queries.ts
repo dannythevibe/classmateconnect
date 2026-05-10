@@ -168,14 +168,14 @@ export async function fetchActiveSessionByToken(token: string): Promise<(Attenda
 }
 
 
-export async function fetchMyStudentRow(matric_no: string | undefined): Promise<Student | null> {
-  if (!matric_no) return null;
-  const { data, error } = await supabase
-    .from("students")
-    .select("*")
-    .eq("matric_no", matric_no)
-    .maybeSingle();
-  if (error) throw error;
+export async function fetchMyStudentRow(userId: string, matric_no?: string): Promise<Student | null> {
+  // Try by matric_no first
+  if (matric_no) {
+    const { data } = await supabase.from("students").select("*").eq("matric_no", matric_no).maybeSingle();
+    if (data) return data as Student;
+  }
+  // Fall back to user_id
+  const { data } = await supabase.from("students").select("*").eq("user_id", userId).maybeSingle();
   return data as Student | null;
 }
 

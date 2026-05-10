@@ -21,10 +21,10 @@ export default function Courses() {
   const { data: courses = [], isLoading } = useQuery({ queryKey: ["courses"], queryFn: fetchCourses });
   const ids = useMemo(() => courses.map((c) => c.id), [courses]);
   
-  const { data: myStudent } = useQuery({ 
-    queryKey: ["my-student", user?.matric_no], 
-    queryFn: () => fetchMyStudentRow(user?.matric_no), 
-    enabled: !!user && user.role === "student" 
+  const { data: myStudent } = useQuery({
+    queryKey: ["my-student", user?.id],
+    queryFn: () => fetchMyStudentRow(user!.id, user?.matric_no),
+    enabled: !!user && user.role === "student"
   });
 
   const { data: myEnrollments = [] } = useQuery({
@@ -49,29 +49,27 @@ export default function Courses() {
     mutationFn: async (courseId: string) => {
       let studentId = myStudent?.id;
 
-      // If no student record exists yet, auto-create one from the user profile
-      if (!studentId && user?.matric_no) {
+      // Auto-create student record if it doesn't exist yet
+      if (!studentId) {
         const { data: created, error: cErr } = await supabase.from("students").insert({
           user_id: user.id,
           name: user.name,
-          matric_no: user.matric_no,
+          matric_no: user.matric_no || null,
           department: user.department ?? "General",
           level: user.level ?? "100",
           created_by: user.id,
         }).select("id").single();
-        if (cErr && cErr.code !== "23505") throw new Error("Could not create student record. Contact Admin.");
+        if (cErr && cErr.code !== "23505") throw new Error("Could not create student record. Contact admin.");
         if (created) {
           studentId = created.id;
           qc.invalidateQueries({ queryKey: ["my-student"] });
         } else {
-          // Already existed (unique constraint) — fetch it
-          const { data: existing } = await supabase.from("students").select("id").eq("matric_no", user.matric_no!).maybeSingle();
-          if (!existing) throw new Error("Student profile not found. Contact Admin.");
+          // Row already exists — fetch it by user_id
+          const { data: existing } = await supabase.from("students").select("id").eq("user_id", user.id).maybeSingle();
+          if (!existing) throw new Error("Student profile not found. Contact admin.");
           studentId = existing.id;
         }
       }
-
-      if (!studentId) throw new Error("No matric number on your profile. Contact Admin to set it up.");
       await enrollInCourse(studentId, courseId);
     },
     onSuccess: () => {
