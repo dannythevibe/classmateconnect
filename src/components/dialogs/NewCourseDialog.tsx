@@ -12,14 +12,6 @@ import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { courseColors } from "@/lib/queries";
 
-async function fetchDepartments() {
-  const { data, error } = await supabase
-    .from("departments")
-    .select("name")
-    .order("name", { ascending: true });
-  if (error) throw error;
-  return data || [];
-}
 
 const schema = z.object({
   code: z.string().trim().min(1).max(20),
@@ -74,13 +66,7 @@ export default function NewCourseDialog() {
     enabled: open && isAdmin,
   });
 
-  const { data: departmentOptions = [] } = useQuery({
-    queryKey: ["admin-departments-list"],
-    queryFn: fetchDepartments,
-    enabled: open,
-  });
-
-  const mutation = useMutation({
+const mutation = useMutation({
     mutationFn: async () => {
       const payload = { ...form, lecturer_id: isAdmin ? form.lecturer_id : user!.id };
       const parsed = schema.safeParse(payload);
@@ -148,18 +134,7 @@ export default function NewCourseDialog() {
 
           <div className="space-y-2">
             <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground pl-1">Department</Label>
-            <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
-              <SelectTrigger className="h-12 rounded-2xl bg-muted/20">
-                <SelectValue placeholder="Select Department" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                {departmentOptions.length === 0 ? (
-                  <div className="px-3 py-2 text-xs text-muted-foreground">No departments — add one in Admin Console.</div>
-                ) : departmentOptions.map((d) => (
-                  <SelectItem key={d.name} value={d.name}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="e.g. Computer Science" className="h-12 rounded-2xl bg-muted/20" />
           </div>
 
           {isAdmin && (
