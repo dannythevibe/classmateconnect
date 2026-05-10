@@ -145,16 +145,20 @@ export default function AdminUsers() {
       source: "self-signup",
       user_id: u.user_id,
     }));
-    const fromRecords: MergedStudent[] = studentRecords.map(s => ({
-      key: `s-${s.id}`,
-      name: s.name,
-      email: "",
-      matric_no: s.matric_no,
-      department: s.department,
-      level: s.level,
-      source: "admin-added",
-      record_id: s.id,
-    }));
+    // Exclude student table records that belong to a lecturer/admin account
+    const lecturerIds = new Set(lecturers.map(l => l.user_id));
+    const fromRecords: MergedStudent[] = studentRecords
+      .filter(s => !s.user_id || !lecturerIds.has(s.user_id))
+      .map(s => ({
+        key: `s-${s.id}`,
+        name: s.name,
+        email: "",
+        matric_no: s.matric_no,
+        department: s.department,
+        level: s.level,
+        source: "admin-added",
+        record_id: s.id,
+      }));
     // Dedupe by matric_no when both exist
     const seen = new Set<string>();
     const merged: MergedStudent[] = [];
