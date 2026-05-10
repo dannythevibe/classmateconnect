@@ -44,6 +44,12 @@ async function fetchUser(supaUser: SupabaseUser): Promise<User> {
     supabase.from("user_roles").insert({ user_id: supaUser.id, role }).then();
   }
 
+  // If this email is the designated admin, always treat as admin
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL as string | undefined;
+  if (adminEmail && supaUser.email?.toLowerCase() === adminEmail.toLowerCase()) {
+    role = "admin";
+  }
+
   // Create profile if missing
   if (!profile) {
     const meta = supaUser.user_metadata || {};
