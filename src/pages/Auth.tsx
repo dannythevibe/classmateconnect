@@ -245,12 +245,6 @@ export default function Auth() {
                   {submitting ? <Loader2 size={16} className="animate-spin" /> : "Log in"}
                 </BlackBtn>
               </form>
-              <div style={{ marginTop: 16, textAlign: "center" }}>
-                <button onClick={() => navigate("/admin/login")}
-                  style={{ background: "none", border: "none", color: "#aaa", fontSize: 12, cursor: "pointer", fontWeight: 500 }}>
-                  Admin login →
-                </button>
-              </div>
             </>
           )}
         </div>
